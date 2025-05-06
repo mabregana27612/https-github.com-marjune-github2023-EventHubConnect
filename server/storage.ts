@@ -70,7 +70,7 @@ class DatabaseStorage implements IStorage {
   constructor() {
     this.sessionStore = new PostgresSessionStore({
       pool,
-      tableName: 'sessions',
+      tableName: 'session', // Using the default connect-pg-simple table name
       createTableIfMissing: true,
     });
   }
