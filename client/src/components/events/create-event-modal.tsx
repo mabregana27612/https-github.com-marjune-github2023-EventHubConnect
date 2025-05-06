@@ -80,10 +80,10 @@ export function CreateEventModal({ isOpen, onClose }: CreateEventModalProps) {
       const formattedData = {
         ...data,
         capacity: Number(data.capacity),
-        // Convert empty speakerIds to undefined
+        // Convert 'none' or empty speakerIds to undefined
         topics: data.topics.map(topic => ({
           ...topic,
-          speakerId: topic.speakerId && topic.speakerId !== "" 
+          speakerId: topic.speakerId && topic.speakerId !== "" && topic.speakerId !== "none"
             ? parseInt(topic.speakerId)
             : undefined
         }))
@@ -346,7 +346,7 @@ export function CreateEventModal({ isOpen, onClose }: CreateEventModalProps) {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">None</SelectItem>
+                            <SelectItem value="none">None</SelectItem>
                             {speakers?.map(speaker => (
                               <SelectItem key={speaker.id} value={String(speaker.id)}>
                                 {speaker.name}

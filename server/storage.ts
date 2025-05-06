@@ -140,8 +140,8 @@ class DatabaseStorage implements IStorage {
           description: topic.description,
         });
         
-        // Assign speaker if provided
-        if (topic.speakerId && topic.speakerId !== "") {
+        // Assign speaker if provided and not "none"
+        if (topic.speakerId && topic.speakerId !== "" && topic.speakerId !== "none") {
           const speakerId = typeof topic.speakerId === 'string' 
             ? parseInt(topic.speakerId) 
             : topic.speakerId;
