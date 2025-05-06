@@ -124,10 +124,39 @@ export default function EventDetails() {
   });
 
   const handleRegistration = () => {
-    if (event?.isRegistered) {
-      cancelRegistrationMutation.mutate();
-    } else {
-      registerMutation.mutate();
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to register for this event.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (event) {
+      // Display warning for past events but still allow registration (for testing)
+      if (new Date(event.eventDate) <= new Date()) {
+        toast({
+          title: "Past Event Warning",
+          description: "This event has already occurred, but registration will still be attempted.",
+          variant: "warning",
+        });
+      }
+      
+      // Display warning for events at capacity but still allow registration (server will validate)
+      if (event.registrationCount >= event.capacity && !event.isRegistered) {
+        toast({
+          title: "Event Capacity Warning",
+          description: "This event appears to be at capacity, but registration will still be attempted.",
+          variant: "warning",
+        });
+      }
+      
+      if (event.isRegistered) {
+        cancelRegistrationMutation.mutate();
+      } else {
+        registerMutation.mutate();
+      }
     }
   };
 
@@ -147,7 +176,21 @@ export default function EventDetails() {
   const isAdmin = user?.role === 'admin';
   const isSpeaker = user?.role === 'speaker';
   const isRegularUser = user?.role === 'user';
-  const canRegister = isRegularUser && event && new Date(event.eventDate) > new Date() && event.registrationCount < event.capacity;
+  
+  // Allow any authenticated user to register (including admin/speakers for testing)
+  // We'll only check if user is authenticated and the event exists - let the server handle date/capacity validation
+  const canRegister = !!user && !!event;
+  
+  console.log("User status:", { 
+    isAuthenticated: !!user, 
+    role: user?.role, 
+    eventDate: event?.eventDate,
+    isPastEvent: event ? new Date(event.eventDate) <= new Date() : null,
+    capacity: event?.capacity,
+    registrationCount: event?.registrationCount,
+    canRegister
+  });
+  
   const canGenerateCertificate = isRegularUser && event?.hasAttended && !event?.hasCertificate;
 
   return (
