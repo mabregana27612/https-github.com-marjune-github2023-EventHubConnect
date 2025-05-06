@@ -49,13 +49,24 @@ export function setupAuth(app: Express) {
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       try {
+        console.log(`Authentication attempt for username: ${username}`);
         const user = await storage.getUserByUsername(username);
-        if (!user || !(await comparePasswords(password, user.password))) {
+        
+        if (!user) {
+          console.log(`User not found: ${username}`);
+          return done(null, false);
+        }
+        
+        const passwordValid = await comparePasswords(password, user.password);
+        console.log(`Password validation result: ${passwordValid}`);
+        
+        if (!passwordValid) {
           return done(null, false);
         } else {
           return done(null, user);
         }
       } catch (error) {
+        console.error('Authentication error:', error);
         return done(error);
       }
     }),
@@ -98,13 +109,26 @@ export function setupAuth(app: Express) {
   });
 
   app.post("/api/login", (req, res, next) => {
-    passport.authenticate("local", (err, user, info) => {
-      if (err) return next(err);
-      if (!user) return res.status(401).json({ message: "Invalid username or password" });
+    console.log('Login attempt:', { username: req.body.username });
+    
+    passport.authenticate("local", (err: Error | null, user: Express.User | false, info: any) => {
+      if (err) {
+        console.error('Login error:', err);
+        return next(err);
+      }
       
-      req.login(user, (err) => {
-        if (err) return next(err);
+      if (!user) {
+        console.log('Login failed: Invalid credentials');
+        return res.status(401).json({ message: "Invalid username or password" });
+      }
+      
+      req.login(user, (err: Error | null) => {
+        if (err) {
+          console.error('Session creation error:', err);
+          return next(err);
+        }
         
+        console.log('Login successful for user:', user.username);
         return res.status(200).json(user);
       });
     })(req, res, next);
