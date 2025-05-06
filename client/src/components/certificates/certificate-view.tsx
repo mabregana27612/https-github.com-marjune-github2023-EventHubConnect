@@ -33,11 +33,13 @@ export function CertificateView({ certificate, speakerName = 'Event Speaker' }: 
     setPdfUrl(pdfDataUrl);
     setLoading(false);
     
-    // Store the PDF data in the session storage for direct download
+    // Store the PDF data in a variable instead of session storage
+    // Session storage has size limitations and PDF data is too large
     try {
-      sessionStorage.setItem(`certificate-${certificate.id}`, pdfDataUrl);
+      // Only store a reference to the PDF instead of the full data
+      sessionStorage.setItem(`certificate-${certificate.id}-available`, 'true');
     } catch (error) {
-      console.error('Error storing PDF in session storage:', error);
+      console.error('Error setting certificate availability flag:', error);
     }
   };
 
@@ -66,15 +68,8 @@ export function CertificateView({ certificate, speakerName = 'Event Speaker' }: 
     setLoading(true);
     setError(null);
     
-    // Try to get from session storage first
-    const cachedPdf = sessionStorage.getItem(`certificate-${certificate.id}`);
-    if (cachedPdf) {
-      setPdfUrl(cachedPdf);
-      setLoading(false);
-      return;
-    }
-    
-    // If not in session storage, generate new PDF
+    // Always regenerate the PDF - don't try to retrieve from session storage
+    // PDFs are too large to reliably store in session storage
     setTimeout(() => {
       const generateButton = document.getElementById('generate-pdf-btn');
       if (generateButton) {
