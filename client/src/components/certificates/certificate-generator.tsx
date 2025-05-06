@@ -8,6 +8,7 @@ interface CertificateGeneratorProps {
   eventTitle: string;
   eventDate: string;
   speakerName: string;
+  speakerSignature?: string;
   attendeeName: string;
   certificateId: string;
   verificationUrl: string;
@@ -18,6 +19,7 @@ export function CertificateGenerator({
   eventTitle,
   eventDate,
   speakerName,
+  speakerSignature,
   attendeeName,
   certificateId,
   verificationUrl,
@@ -105,7 +107,17 @@ export function CertificateGenerator({
             
             <div className="mt-12 w-full flex justify-between items-end">
               <div className="text-center">
-                <div className="h-0.5 bg-gray-400 w-40 mb-2"></div>
+                {speakerSignature ? (
+                  <div className="w-40 h-16 mb-2 flex items-center justify-center">
+                    <img 
+                      src={speakerSignature} 
+                      alt="Speaker Signature" 
+                      className="max-w-full max-h-full"
+                    />
+                  </div>
+                ) : (
+                  <div className="h-0.5 bg-gray-400 w-40 mb-2"></div>
+                )}
                 <p className="font-semibold">{speakerName}</p>
                 <p className="text-sm text-gray-600">Speaker</p>
               </div>

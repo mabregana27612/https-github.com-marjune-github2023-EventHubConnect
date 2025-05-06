@@ -424,6 +424,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Signature upload endpoint
+  app.patch(`${apiPrefix}/profile/signature`, isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { signatureImage } = req.body;
+      
+      if (!signatureImage) {
+        return res.status(400).json({ message: "Signature image is required" });
+      }
+      
+      // Verify user is a speaker or admin before allowing upload
+      const user = await storage.getUser(userId);
+      if (user.role !== 'speaker' && user.role !== 'admin') {
+        return res.status(403).json({ message: "Only speakers can upload signatures" });
+      }
+      
+      // Update the user's signature field
+      const updatedUser = await storage.updateUser(userId, { signatureImage });
+      res.json(updatedUser);
+    } catch (error) {
+      res.status(500).json({ message: (error as Error).message });
+    }
+  });
+
   // Dashboard stats
   app.get(`${apiPrefix}/stats`, isAuthenticated, async (req, res) => {
     try {
