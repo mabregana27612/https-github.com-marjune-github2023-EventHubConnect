@@ -192,7 +192,7 @@ export default function EventDetails() {
                         }
                         className="ml-4"
                       >
-                        {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
+                        {event.status && (event.status.charAt(0).toUpperCase() + event.status.slice(1))}
                       </Badge>
                     </div>
                     <div className="border-t border-gray-200">
@@ -212,7 +212,7 @@ export default function EventDetails() {
                             Time
                           </dt>
                           <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                            {event.startTime.slice(0, 5)} - {event.endTime.slice(0, 5)}
+                            {event.startTime && event.startTime.slice(0, 5)} - {event.endTime && event.endTime.slice(0, 5)}
                           </dd>
                         </div>
                         <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -311,7 +311,7 @@ export default function EventDetails() {
                                     <div key={speaker.id} className="flex items-center space-x-3">
                                       <Avatar>
                                         <AvatarImage src={speaker.profileImage || undefined} />
-                                        <AvatarFallback>{speaker.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                                        <AvatarFallback>{speaker.name && speaker.name.slice(0, 2).toUpperCase()}</AvatarFallback>
                                       </Avatar>
                                       <div>
                                         <p className="text-sm font-medium leading-none">{speaker.name}</p>
@@ -359,7 +359,7 @@ export default function EventDetails() {
                                           <div className="flex items-center">
                                             <Avatar className="mr-3">
                                               <AvatarImage src={registration.user.profileImage || undefined} />
-                                              <AvatarFallback>{registration.user.name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                                              <AvatarFallback>{registration.user.name && registration.user.name.slice(0, 2).toUpperCase()}</AvatarFallback>
                                             </Avatar>
                                             <div>
                                               <div className="text-sm font-medium text-gray-900">{registration.user.name}</div>
