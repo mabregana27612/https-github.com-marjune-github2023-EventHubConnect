@@ -4,12 +4,14 @@ import { User } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { Sidebar } from "@/components/layout/sidebar";
 import { MobileNav } from "@/components/layout/mobile-nav";
-import { Loader2, Search, Download, ExternalLink, Calendar, Users } from "lucide-react";
+import { Loader2, Search, Download, ExternalLink, Calendar, Users, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { CertificateView } from "@/components/certificates/certificate-view";
 
 type Certificate = {
   id: number;
@@ -128,24 +130,31 @@ export default function Certificates() {
                           </CardContent>
                           <CardFooter className="bg-gray-50 pt-2">
                             <div className="flex w-full justify-between">
-                              <Button variant="outline" size="sm" asChild>
-                                <a 
-                                  href={certificate.certificateUrl} 
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  <ExternalLink className="mr-2 h-4 w-4" />
-                                  View
-                                </a>
-                              </Button>
-                              <Button size="sm" asChild>
-                                <a 
-                                  href={`${certificate.certificateUrl}?download=true`}
-                                  download
-                                >
-                                  <Download className="mr-2 h-4 w-4" />
-                                  Download
-                                </a>
+                              <Dialog>
+                                <DialogTrigger asChild>
+                                  <Button variant="outline" size="sm">
+                                    <Eye className="mr-2 h-4 w-4" />
+                                    View PDF
+                                  </Button>
+                                </DialogTrigger>
+                                <DialogContent className="max-w-4xl">
+                                  <DialogHeader>
+                                    <DialogTitle>Certificate for {certificate.eventTitle}</DialogTitle>
+                                    <DialogDescription>
+                                      Issued to {certificate.userName} on {new Date(certificate.issuedAt).toLocaleDateString()}
+                                    </DialogDescription>
+                                  </DialogHeader>
+                                  <div className="mt-4">
+                                    <CertificateView 
+                                      certificate={certificate} 
+                                    />
+                                  </div>
+                                </DialogContent>
+                              </Dialog>
+                              
+                              <Button size="sm">
+                                <Download className="mr-2 h-4 w-4" />
+                                Download PDF
                               </Button>
                             </div>
                           </CardFooter>

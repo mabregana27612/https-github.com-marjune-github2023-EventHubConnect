@@ -4,7 +4,7 @@ import { User, Event as EventType, Topic } from "@shared/schema";
 import { useAuth } from "@/hooks/use-auth";
 import { Sidebar } from "@/components/layout/sidebar";
 import { MobileNav } from "@/components/layout/mobile-nav";
-import { Loader2, Calendar, MapPin, Clock, Users, Award, ChevronLeft } from "lucide-react";
+import { Loader2, Calendar, MapPin, Clock, Users, Award, ChevronLeft, Eye, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +14,8 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { AttendanceTracker } from "@/components/events/attendance-tracker";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { CertificateView } from "@/components/certificates/certificate-view";
 
 type EventWithDetails = EventType & {
   topics: (Topic & {
@@ -322,14 +324,44 @@ export default function EventDetails() {
                           </div>
                           
                           {event.hasCertificate ? (
-                            <a 
-                              href={event.certificateUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-                            >
-                              Download Certificate
-                            </a>
+                            <div className="flex space-x-2">
+                              <Dialog>
+                                <DialogTrigger asChild>
+                                  <Button variant="outline">
+                                    <Eye className="mr-2 h-4 w-4" />
+                                    View Certificate
+                                  </Button>
+                                </DialogTrigger>
+                                <DialogContent className="max-w-4xl">
+                                  <DialogHeader>
+                                    <DialogTitle>Your Certificate for {event.title}</DialogTitle>
+                                    <DialogDescription>
+                                      Issued on {formatDate(event.eventDate)}
+                                    </DialogDescription>
+                                  </DialogHeader>
+                                  <div className="mt-4">
+                                    <CertificateView 
+                                      certificate={{
+                                        id: event.id,
+                                        eventId: event.id,
+                                        eventTitle: event.title,
+                                        userId: user?.id || 0,
+                                        userName: user?.name || '',
+                                        eventDate: event.eventDate,
+                                        issuedAt: new Date().toISOString(),
+                                        certificateUrl: event.certificateUrl || '',
+                                      }}
+                                      speakerName={event.topics?.[0]?.speakers?.[0]?.name || 'Event Speaker'}
+                                    />
+                                  </div>
+                                </DialogContent>
+                              </Dialog>
+                              
+                              <Button>
+                                <Download className="mr-2 h-4 w-4" />
+                                Download PDF
+                              </Button>
+                            </div>
                           ) : canGenerateCertificate ? (
                             <Button 
                               onClick={handleGenerateCertificate}
