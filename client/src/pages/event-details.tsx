@@ -285,7 +285,18 @@ export default function EventDetails() {
                     </div>
                     
                     {canRegister && (
-                      <div className="px-4 py-3 bg-gray-50 text-right sm:px-6 border-t border-gray-200">
+                      <div className="px-4 py-3 bg-gray-50 sm:px-6 border-t border-gray-200 flex justify-between items-center">
+                        <div>
+                          {event.isRegistered && (
+                            <Button
+                              variant="outline"
+                              onClick={() => setLocation(`/events/${id}/attend`)}
+                              className="mr-2"
+                            >
+                              Check In / Attendance
+                            </Button>
+                          )}
+                        </div>
                         <Button 
                           onClick={handleRegistration}
                           disabled={registerMutation.isPending || cancelRegistrationMutation.isPending}
@@ -336,6 +347,7 @@ export default function EventDetails() {
                     <TabsList>
                       <TabsTrigger value="topics">Topics & Speakers</TabsTrigger>
                       {isAdmin && <TabsTrigger value="attendees">Attendees</TabsTrigger>}
+                      {isAdmin && <TabsTrigger value="attendance">Attendance Tracking</TabsTrigger>}
                     </TabsList>
                     <TabsContent value="topics">
                       <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
@@ -447,6 +459,17 @@ export default function EventDetails() {
                             )}
                           </CardContent>
                         </Card>
+                      </TabsContent>
+                    )}
+                    
+                    {isAdmin && (
+                      <TabsContent value="attendance">
+                        <AttendanceTracker 
+                          eventId={parseInt(id)}
+                          eventTitle={event.title}
+                          registrations={event.registrations}
+                          locationType={event.locationType}
+                        />
                       </TabsContent>
                     )}
                   </Tabs>

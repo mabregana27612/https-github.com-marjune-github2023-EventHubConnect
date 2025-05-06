@@ -243,7 +243,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Mark Attendance
+  // Mark Attendance (admin marks attendance for user)
   app.post(`${apiPrefix}/events/:id/attendance/:userId`, isAdmin, async (req, res) => {
     try {
       const eventId = parseInt(req.params.id);
@@ -258,6 +258,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const success = await storage.markAttendance(registration.id);
+      res.status(200).json({ success });
+    } catch (error) {
+      res.status(500).json({ message: (error as Error).message });
+    }
+  });
+  
+  // Self-attendance for virtual events (user self-reports attendance with code)
+  app.post(`${apiPrefix}/events/:id/self-attendance`, isAuthenticated, async (req, res) => {
+    try {
+      const eventId = parseInt(req.params.id);
+      const userId = req.user!.id;
+      const { code } = req.body;
+      
+      if (!code) {
+        return res.status(400).json({ message: "Attendance code is required" });
+      }
+      
+      // Get the event to verify it's a virtual event
+      const event = await storage.getEvent(eventId);
+      if (!event) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+      
+      // Only allow self-attendance for virtual or hybrid events
+      if (event.locationType !== 'virtual' && event.locationType !== 'hybrid') {
+        return res.status(400).json({ message: "Self-attendance is only available for virtual or hybrid events" });
+      }
+      
+      // In a real app, you would validate the attendance code here
+      // For this demo, we'll use a simple validation based on code length
+      if (code.length < 4) {
+        return res.status(400).json({ message: "Invalid attendance code" });
+      }
+      
+      // Get registration for this user and event
+      const registrations = await storage.getEventRegistrations(eventId);
+      const registration = registrations.find(reg => reg.userId === userId);
+      
+      if (!registration) {
+        return res.status(404).json({ message: "You are not registered for this event" });
+      }
+      
+      if (registration.attended) {
+        return res.status(400).json({ message: "Attendance already recorded" });
+      }
+      
+      const success = await storage.markAttendance(registration.id);
+      
+      // Log the activity
+      await storage.logActivity(
+        userId,
+        'attendance',
+        `Attended event: ${event.title}`
+      );
+      
       res.status(200).json({ success });
     } catch (error) {
       res.status(500).json({ message: (error as Error).message });
