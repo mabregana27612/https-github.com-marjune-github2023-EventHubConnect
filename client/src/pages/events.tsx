@@ -272,9 +272,13 @@ export default function Events() {
                                           {/* Edit and Delete only for admin or speaker users */}
                                           {user && (user.role === 'admin' || user.role === 'speaker') && (
                                             <>
-                                              <a href={`/events/${event.id}/edit`} className="text-primary-600 hover:text-primary-900">
+                                              <button
+                                                onClick={() => setLocation(`/events/${event.id}`)}
+                                                className="text-primary-600 hover:text-primary-900"
+                                                title="Edit event"
+                                              >
                                                 <Edit className="h-4 w-4" />
-                                              </a>
+                                              </button>
                                               <button 
                                                 onClick={() => handleDeleteEvent(event.id)}
                                                 className="text-red-600 hover:text-red-900"
