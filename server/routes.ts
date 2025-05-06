@@ -142,18 +142,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post(`${apiPrefix}/events`, isAuthenticated, async (req, res) => {
     try {
+      // Extract topics and separate them from event data
+      const { topics = [], ...eventBase } = req.body;
+      
       // Parse and validate event data
       const eventData = {
-        ...req.body,
+        ...eventBase,
         createdById: req.user.id,
       };
       
+      // Create the event first
       const event = await storage.createEvent(eventData);
+      
+      // Then create all the topics and assign speakers
+      if (topics && topics.length > 0) {
+        for (const topic of topics) {
+          // Create the topic
+          const newTopic = await storage.createTopic({
+            eventId: event.id,
+            title: topic.title,
+            description: topic.description
+          });
+          
+          // If a speaker is assigned, create the assignment
+          if (topic.speakerId) {
+            await storage.assignSpeakerToTopic(topic.speakerId, newTopic.id);
+          }
+        }
+      }
+      
       res.status(201).json(event);
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.error("Validation error:", error.errors);
         return res.status(400).json({ errors: error.errors });
       }
+      console.error("Event creation error:", error);
       res.status(500).json({ message: (error as Error).message });
     }
   });

@@ -5,13 +5,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, SubmitHandler } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Calendar, Plus, Trash2 } from "lucide-react";
+import { User } from "@shared/schema";
 
 // Define the topic schema with speaker assignment
 const topicSchema = z.object({
@@ -30,7 +31,7 @@ const eventFormSchema = z.object({
     required_error: "Please select a location type",
   }),
   venue: z.string().min(3, "Venue must be at least 3 characters"),
-  capacity: z.string().transform(val => parseInt(val, 10)),
+  capacity: z.coerce.number().min(1, "Capacity must be at least 1"),
   topics: z.array(topicSchema).min(1, "At least one topic is required"),
   status: z.enum(["draft", "published"], {
     required_error: "Please select a status",
@@ -46,11 +47,13 @@ export function CreateEventModal({ isOpen, onClose }: CreateEventModalProps) {
   const { toast } = useToast();
   
   // Fetch available speakers
-  const { data: speakers, isLoading: isLoadingSpeakers } = useQuery({
+  const { data: speakers = [], isLoading: isLoadingSpeakers } = useQuery<User[]>({
     queryKey: ["/api/speakers"],
   });
   
-  const form = useForm<z.infer<typeof eventFormSchema>>({
+  type EventFormValues = z.infer<typeof eventFormSchema>;
+  
+  const form = useForm<EventFormValues>({
     resolver: zodResolver(eventFormSchema),
     defaultValues: {
       title: "",
@@ -60,7 +63,7 @@ export function CreateEventModal({ isOpen, onClose }: CreateEventModalProps) {
       endTime: "17:00",
       locationType: "virtual",
       venue: "",
-      capacity: "100",
+      capacity: 100,
       topics: [{ title: "", description: "", speakerId: "" }],
       status: "draft",
     },
@@ -106,7 +109,7 @@ export function CreateEventModal({ isOpen, onClose }: CreateEventModalProps) {
     },
   });
 
-  const onSubmit = (data: z.infer<typeof eventFormSchema>) => {
+  const onSubmit: SubmitHandler<EventFormValues> = (data) => {
     createEventMutation.mutate(data);
   };
 
