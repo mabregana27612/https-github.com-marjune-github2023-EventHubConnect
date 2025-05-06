@@ -5,13 +5,20 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar } from "lucide-react";
+import { Calendar, Plus, Trash2 } from "lucide-react";
+
+// Define the topic schema with speaker assignment
+const topicSchema = z.object({
+  title: z.string().min(3, "Topic title must be at least 3 characters"),
+  description: z.string().min(10, "Topic description must be at least 10 characters"),
+  speakerId: z.string().optional(),
+});
 
 const eventFormSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
@@ -24,7 +31,7 @@ const eventFormSchema = z.object({
   }),
   venue: z.string().min(3, "Venue must be at least 3 characters"),
   capacity: z.string().transform(val => parseInt(val, 10)),
-  topics: z.string().min(1, "Topics are required"),
+  topics: z.array(topicSchema).min(1, "At least one topic is required"),
   status: z.enum(["draft", "published"], {
     required_error: "Please select a status",
   }),
@@ -38,6 +45,11 @@ interface CreateEventModalProps {
 export function CreateEventModal({ isOpen, onClose }: CreateEventModalProps) {
   const { toast } = useToast();
   
+  // Fetch available speakers
+  const { data: speakers, isLoading: isLoadingSpeakers } = useQuery({
+    queryKey: ["/api/speakers"],
+  });
+  
   const form = useForm<z.infer<typeof eventFormSchema>>({
     resolver: zodResolver(eventFormSchema),
     defaultValues: {
@@ -49,9 +61,15 @@ export function CreateEventModal({ isOpen, onClose }: CreateEventModalProps) {
       locationType: "virtual",
       venue: "",
       capacity: "100",
-      topics: "",
+      topics: [{ title: "", description: "", speakerId: "" }],
       status: "draft",
     },
+  });
+  
+  // Set up fields array for dynamic topics
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "topics",
   });
 
   const createEventMutation = useMutation({
@@ -59,7 +77,13 @@ export function CreateEventModal({ isOpen, onClose }: CreateEventModalProps) {
       const formattedData = {
         ...data,
         capacity: Number(data.capacity),
-        topics: data.topics.split(',').map(topic => topic.trim()),
+        // Convert empty speakerIds to undefined
+        topics: data.topics.map(topic => ({
+          ...topic,
+          speakerId: topic.speakerId && topic.speakerId !== "" 
+            ? parseInt(topic.speakerId)
+            : undefined
+        }))
       };
       await apiRequest("POST", "/api/events", formattedData);
     },
@@ -242,22 +266,98 @@ export function CreateEventModal({ isOpen, onClose }: CreateEventModalProps) {
               )}
             />
             
-            <FormField
-              control={form.control}
-              name="topics"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Topics (comma separated)</FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="E.g., Coding, UI/UX, Machine Learning" 
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-md font-medium">Topics and Speakers</h3>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => append({ title: "", description: "", speakerId: "" })}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Topic
+                </Button>
+              </div>
+              
+              {fields.map((field, index) => (
+                <div key={field.id} className="space-y-4 p-4 border rounded-lg relative">
+                  {index > 0 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute top-2 right-2"
+                      onClick={() => remove(index)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                  
+                  <FormField
+                    control={form.control}
+                    name={`topics.${index}.title`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Topic Title</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter topic title" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name={`topics.${index}.description`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Topic Description</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Enter topic description"
+                            className="resize-none"
+                            rows={2}
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name={`topics.${index}.speakerId`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Assign Speaker (Optional)</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value || ""}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a speaker" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="">None</SelectItem>
+                            {speakers?.map(speaker => (
+                              <SelectItem key={speaker.id} value={String(speaker.id)}>
+                                {speaker.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              ))}
+            </div>
             
             <FormField
               control={form.control}
