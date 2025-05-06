@@ -544,18 +544,31 @@ class DatabaseStorage implements IStorage {
       ),
       with: {
         event: true,
+        user: true,
       },
     });
     
-    return registrations.map(reg => ({
-      id: reg.id,
-      eventId: reg.eventId,
-      eventTitle: reg.event?.title,
-      userId: reg.userId,
-      certificateUrl: reg.certificateUrl,
-      issuedAt: reg.attendanceTime,
-      eventDate: reg.event?.eventDate,
-    }));
+    // Get certificates to fetch the speaker signatures
+    const certificateData = [];
+    for (const reg of registrations) {
+      const certificate = await db.query.certificates.findFirst({
+        where: eq(certificates.registrationId, reg.id),
+      });
+      
+      certificateData.push({
+        id: reg.id,
+        eventId: reg.eventId,
+        eventTitle: reg.event?.title,
+        userId: reg.userId,
+        userName: reg.user?.name,
+        certificateUrl: reg.certificateUrl,
+        issuedAt: reg.attendanceTime,
+        eventDate: reg.event?.eventDate,
+        speakerSignature: certificate?.speakerSignature,
+      });
+    }
+    
+    return certificateData;
   }
 
   // Activity logging

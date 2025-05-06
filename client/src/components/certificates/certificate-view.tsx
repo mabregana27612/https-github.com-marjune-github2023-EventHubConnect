@@ -15,6 +15,7 @@ interface CertificateViewProps {
     eventDate: string;
     issuedAt: string;
     certificateUrl: string;
+    speakerSignature?: string;
   };
   speakerName?: string;
 }
@@ -143,6 +144,7 @@ export function CertificateView({ certificate, speakerName = 'Event Speaker' }: 
           eventTitle={certificate.eventTitle}
           eventDate={certificate.eventDate}
           speakerName={speakerName}
+          speakerSignature={certificate.speakerSignature}
           attendeeName={certificate.userName}
           certificateId={certificate.id.toString()}
           verificationUrl={verificationUrl}

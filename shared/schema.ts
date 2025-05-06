@@ -144,6 +144,7 @@ export const certificates = pgTable("certificates", {
   id: serial("id").primaryKey(),
   registrationId: integer("registration_id").references(() => eventRegistrations.id).notNull(),
   certificateUrl: text("certificate_url").notNull(),
+  speakerSignature: text("speaker_signature"),
   issuedAt: timestamp("issued_at").defaultNow().notNull(),
 });
 
