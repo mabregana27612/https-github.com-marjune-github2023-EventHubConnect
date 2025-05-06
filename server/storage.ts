@@ -122,18 +122,34 @@ class DatabaseStorage implements IStorage {
 
   // Event methods
   async createEvent(eventData: any): Promise<any> {
+    // Extract topics to handle them separately
+    const { topics, ...eventDataWithoutTopics } = eventData;
+    
     const [event] = await db.insert(events).values({
-      ...eventData,
+      ...eventDataWithoutTopics,
       createdById: eventData.userId || eventData.createdById,
     }).returning();
     
-    // Create topics for the event
-    if (eventData.topics && Array.isArray(eventData.topics)) {
-      for (const topicTitle of eventData.topics) {
-        await this.createTopic({
+    // Create topics and assign speakers
+    if (topics && Array.isArray(topics)) {
+      for (const topic of topics) {
+        // Create the topic first
+        const createdTopic = await this.createTopic({
           eventId: event.id,
-          title: topicTitle,
+          title: topic.title,
+          description: topic.description,
         });
+        
+        // Assign speaker if provided
+        if (topic.speakerId && topic.speakerId !== "") {
+          const speakerId = typeof topic.speakerId === 'string' 
+            ? parseInt(topic.speakerId) 
+            : topic.speakerId;
+            
+          if (!isNaN(speakerId)) {
+            await this.assignSpeakerToTopic(speakerId, createdTopic.id);
+          }
+        }
       }
     }
     
@@ -167,11 +183,28 @@ class DatabaseStorage implements IStorage {
       throw new Error(`Event with id ${id} not found`);
     }
     
+    // Transform topics and speakers structure to match client expectations
+    const transformedTopics = event.topics.map(topic => {
+      // Extract speaker objects from the join table entries
+      const speakers = topic.speakers
+        .filter(s => s.speaker)
+        .map(s => s.speaker);
+      
+      return {
+        id: topic.id,
+        title: topic.title,
+        description: topic.description,
+        eventId: topic.eventId,
+        speakers: speakers
+      };
+    });
+    
     // Get registrations for the event
     const registrations = await this.getEventRegistrations(id);
     
     return {
       ...event,
+      topics: transformedTopics,
       registrations,
       registrationCount: registrations.length,
       registrationPercentage: Math.min(100, Math.round((registrations.length / event.capacity) * 100)),
