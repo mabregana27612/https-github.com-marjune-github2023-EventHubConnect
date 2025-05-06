@@ -348,7 +348,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get the registration to check ownership
-      const registration = await storage.getEventRegistration(registrationId);
+      const registrations = await storage.getEventRegistrations(0); // Dummy call to get all registrations
+      const registration = registrations.find(reg => reg.id === registrationId);
       
       if (!registration) {
         return res.status(404).json({ error: "Certificate not found" });
@@ -359,10 +360,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Unauthorized access to certificate" });
       }
       
-      // Get the certificate data
-      const certificate = await storage.getCertificate(registrationId);
+      // For certificate data, we'll use the registration data directly since it contains certificateUrl
       
-      if (!certificate) {
+      if (!registration.certificateGenerated || !registration.certificateUrl) {
         return res.status(404).json({ error: "Certificate data not found" });
       }
       
