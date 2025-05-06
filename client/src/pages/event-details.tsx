@@ -357,7 +357,15 @@ export default function EventDetails() {
                                 </DialogContent>
                               </Dialog>
                               
-                              <Button>
+                              <Button 
+                                onClick={() => {
+                                  // Trigger same certificate view's download functionality
+                                  const downloadBtn = document.getElementById(`certificate-download-${event.id}`);
+                                  if (downloadBtn) {
+                                    downloadBtn.click();
+                                  }
+                                }}
+                              >
                                 <Download className="mr-2 h-4 w-4" />
                                 Download PDF
                               </Button>

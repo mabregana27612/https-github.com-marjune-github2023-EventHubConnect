@@ -152,7 +152,16 @@ export default function Certificates() {
                                 </DialogContent>
                               </Dialog>
                               
-                              <Button size="sm">
+                              <Button 
+                                size="sm"
+                                onClick={() => {
+                                  // Trigger same certificate view's download functionality
+                                  const downloadBtn = document.getElementById(`certificate-download-${certificate.id}`);
+                                  if (downloadBtn) {
+                                    downloadBtn.click();
+                                  }
+                                }}
+                              >
                                 <Download className="mr-2 h-4 w-4" />
                                 Download PDF
                               </Button>
