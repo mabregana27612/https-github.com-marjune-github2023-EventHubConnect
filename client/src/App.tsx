@@ -8,6 +8,7 @@ import HomePage from "@/pages/home-page";
 import Dashboard from "@/pages/dashboard";
 import Events from "@/pages/events";
 import EventDetails from "@/pages/event-details";
+import EventAttendance from "@/pages/event-attendance";
 import Speakers from "@/pages/speakers";
 import Users from "@/pages/users";
 import Certificates from "@/pages/certificates";
@@ -23,6 +24,7 @@ function Router() {
       <ProtectedRoute path="/dashboard" component={Dashboard} />
       <ProtectedRoute path="/events" component={Events} />
       <ProtectedRoute path="/events/:id" component={EventDetails} />
+      <ProtectedRoute path="/events/:id/attend" component={EventAttendance} />
       <ProtectedRoute path="/speakers" component={Speakers} />
       <ProtectedRoute path="/users" component={Users} />
       <ProtectedRoute path="/certificates" component={Certificates} />

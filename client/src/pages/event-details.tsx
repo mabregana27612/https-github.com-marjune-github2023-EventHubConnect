@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { AttendanceTracker } from "@/components/events/attendance-tracker";
 
 type EventWithDetails = EventType & {
   topics: (Topic & {
