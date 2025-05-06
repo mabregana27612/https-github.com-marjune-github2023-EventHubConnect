@@ -483,7 +483,7 @@ class DatabaseStorage implements IStorage {
   }
 
   // Certificate methods
-  async generateCertificate(registrationId: number): Promise<any> {
+  async generateCertificate(registrationId: number, speakerSignature?: string | null): Promise<any> {
     // Check if the registration exists and attendance is marked
     const registration = await db.query.eventRegistrations.findFirst({
       where: eq(eventRegistrations.id, registrationId),
@@ -521,6 +521,7 @@ class DatabaseStorage implements IStorage {
     const [certificate] = await db.insert(certificates).values({
       registrationId,
       certificateUrl,
+      speakerSignature: speakerSignature || null,
     }).returning();
     
     // Log activity

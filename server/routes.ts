@@ -356,7 +356,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Attendance must be marked before generating certificate" });
       }
       
-      const certificate = await storage.generateCertificate(registration.id);
+      // Get the event to find its topics and speakers
+      const event = await storage.getEvent(eventId);
+      if (!event || !event.topics || event.topics.length === 0) {
+        return res.status(400).json({ message: "Event has no topics or speakers" });
+      }
+      
+      // Find the primary speaker of the event (first speaker found)
+      let speakerSignature = null;
+      for (const topic of event.topics) {
+        if (topic.speakers && topic.speakers.length > 0) {
+          const speaker = topic.speakers[0];
+          if (speaker.signatureImage) {
+            speakerSignature = speaker.signatureImage;
+            break;
+          }
+        }
+      }
+      
+      // Generate the certificate with the speaker signature if available
+      const certificate = await storage.generateCertificate(registration.id, speakerSignature);
       res.status(201).json(certificate);
     } catch (error) {
       res.status(500).json({ message: (error as Error).message });
