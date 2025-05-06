@@ -90,10 +90,13 @@ export default function Events() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
               <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-semibold text-gray-900">Event Management</h1>
-                <Button onClick={() => setIsCreateModalOpen(true)}>
-                  <Calendar className="mr-2 h-4 w-4" />
-                  Create Event
-                </Button>
+                {/* Only show Create Event button for admin or speaker users */}
+                {user && (user.role === 'admin' || user.role === 'speaker') && (
+                  <Button onClick={() => setIsCreateModalOpen(true)}>
+                    <Calendar className="mr-2 h-4 w-4" />
+                    Create Event
+                  </Button>
+                )}
               </div>
             </div>
             
@@ -266,18 +269,24 @@ export default function Events() {
                                       </td>
                                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <div className="flex space-x-2 justify-end">
-                                          <a href={`/events/${event.id}/edit`} className="text-primary-600 hover:text-primary-900">
-                                            <Edit className="h-4 w-4" />
-                                          </a>
+                                          {/* Edit and Delete only for admin or speaker users */}
+                                          {user && (user.role === 'admin' || user.role === 'speaker') && (
+                                            <>
+                                              <a href={`/events/${event.id}/edit`} className="text-primary-600 hover:text-primary-900">
+                                                <Edit className="h-4 w-4" />
+                                              </a>
+                                              <button 
+                                                onClick={() => handleDeleteEvent(event.id)}
+                                                className="text-red-600 hover:text-red-900"
+                                              >
+                                                <Trash2 className="h-4 w-4" />
+                                              </button>
+                                            </>
+                                          )}
+                                          {/* View is available to all users */}
                                           <a href={`/events/${event.id}`} className="text-gray-600 hover:text-gray-900">
                                             <Eye className="h-4 w-4" />
                                           </a>
-                                          <button 
-                                            onClick={() => handleDeleteEvent(event.id)}
-                                            className="text-red-600 hover:text-red-900"
-                                          >
-                                            <Trash2 className="h-4 w-4" />
-                                          </button>
                                         </div>
                                       </td>
                                     </tr>

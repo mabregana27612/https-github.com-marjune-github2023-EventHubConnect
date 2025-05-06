@@ -19,6 +19,13 @@ const isAdmin = (req: Request, res: Response, next: Function) => {
   res.status(403).json({ message: "Forbidden" });
 };
 
+const isAdminOrSpeaker = (req: Request, res: Response, next: Function) => {
+  if (req.isAuthenticated() && (req.user.role === 'admin' || req.user.role === 'speaker')) {
+    return next();
+  }
+  res.status(403).json({ message: "Forbidden" });
+};
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication
   setupAuth(app);
@@ -140,7 +147,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post(`${apiPrefix}/events`, isAuthenticated, async (req, res) => {
+  app.post(`${apiPrefix}/events`, isAdminOrSpeaker, async (req, res) => {
     try {
       // Extract topics and separate them from event data
       const { topics = [], ...eventBase } = req.body;
@@ -182,7 +189,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put(`${apiPrefix}/events/:id`, isAuthenticated, async (req, res) => {
+  app.put(`${apiPrefix}/events/:id`, isAdminOrSpeaker, async (req, res) => {
     try {
       const eventId = parseInt(req.params.id);
       const eventData = {
