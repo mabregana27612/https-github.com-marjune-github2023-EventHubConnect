@@ -45,21 +45,40 @@ export function CertificateView({ certificate, speakerName = 'Event Speaker' }: 
 
   // Direct download function that doesn't rely on iframe
   const handleDirectDownload = () => {
-    if (pdfUrl) {
-      try {
-        // Create temporary link element
-        const link = document.createElement('a');
-        link.href = pdfUrl;
-        link.download = `Certificate_${certificate.eventTitle}_${certificate.userName}.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      } catch (error) {
-        console.error('Error during direct download:', error);
-        setError('Download failed. Please try again.');
-      }
-    } else {
+    if (!pdfUrl) {
       setError('No PDF available. Please regenerate the certificate.');
+      return;
+    }
+    
+    try {
+      // Convert base64 data URL to Blob
+      const byteString = atob(pdfUrl.split(',')[1]);
+      const mimeString = pdfUrl.split(',')[0].split(':')[1].split(';')[0];
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+      
+      for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+      }
+      
+      const blob = new Blob([ab], { type: mimeString });
+      const url = URL.createObjectURL(blob);
+      
+      // Create and trigger download link
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Certificate_${certificate.eventTitle}_${certificate.userName}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Clean up
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, 100);
+    } catch (error) {
+      console.error('Error during direct download:', error);
+      setError('Download failed. Please try again.');
     }
   };
 
@@ -157,15 +176,14 @@ export function CertificateView({ certificate, speakerName = 'Event Speaker' }: 
         </Button>
         
         {pdfUrl && (
-          <a 
+          <Button
             id={`certificate-download-${certificate.id}`}
-            href={pdfUrl} 
-            download={`Certificate_${certificate.eventTitle}_${certificate.userName}.pdf`}
-            className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground ring-offset-background transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+            onClick={handleDirectDownload}
+            className="inline-flex h-10 items-center justify-center"
           >
             <Download className="mr-2 h-4 w-4" />
             Download PDF
-          </a>
+          </Button>
         )}
       </CardFooter>
     </Card>
