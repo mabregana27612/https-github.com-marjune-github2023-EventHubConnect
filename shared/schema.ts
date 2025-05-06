@@ -18,6 +18,7 @@ export const users = pgTable("users", {
   bio: text("bio"),
   role: roleEnum("role").notNull().default('user'),
   profileImage: text("profile_image"),
+  signatureImage: text("signature_image"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
