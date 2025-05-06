@@ -51,6 +51,7 @@ export default function Profile() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
+  const isSpeaker = user?.role === "speaker" || user?.role === "admin";
 
   const { data: profile, isLoading } = useQuery<UserProfile>({
     queryKey: ["/api/profile"],

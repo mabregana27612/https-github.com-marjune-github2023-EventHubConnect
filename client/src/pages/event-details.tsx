@@ -327,7 +327,10 @@ export default function EventDetails() {
                             <div className="flex space-x-2">
                               <Dialog>
                                 <DialogTrigger asChild>
-                                  <Button variant="outline">
+                                  <Button 
+                                    variant="outline"
+                                    data-certificate-id={event.id}
+                                  >
                                     <Eye className="mr-2 h-4 w-4" />
                                     View Certificate
                                   </Button>
@@ -359,10 +362,22 @@ export default function EventDetails() {
                               
                               <Button 
                                 onClick={() => {
-                                  // Trigger same certificate view's download functionality
-                                  const downloadBtn = document.getElementById(`certificate-download-${event.id}`);
-                                  if (downloadBtn) {
-                                    downloadBtn.click();
+                                  // Try to get the PDF from session storage
+                                  const cachedPdf = sessionStorage.getItem(`certificate-${event.id}`);
+                                  if (cachedPdf) {
+                                    // Create temporary link for direct download
+                                    const link = document.createElement('a');
+                                    link.href = cachedPdf;
+                                    link.download = `Certificate_${event.title}_${user?.name || 'Attendee'}.pdf`;
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    document.body.removeChild(link);
+                                  } else {
+                                    // If no cached PDF, trigger the dialog to open and generate first
+                                    const dialogBtn = document.querySelector(`[data-certificate-id="${event.id}"]`);
+                                    if (dialogBtn instanceof HTMLElement) {
+                                      dialogBtn.click();
+                                    }
                                   }
                                 }}
                               >

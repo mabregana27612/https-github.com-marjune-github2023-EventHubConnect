@@ -29,8 +29,24 @@ export function CertificateGenerator({
     if (!certificateRef.current) return;
 
     try {
-      // Convert the certificate template to an image
-      const imageData = await toPng(certificateRef.current, { quality: 0.95 });
+      // Make sure the certificate template is visible during conversion
+      const certificateTemplate = certificateRef.current;
+      certificateTemplate.style.display = 'block';
+      
+      // Add a small delay to ensure DOM is rendered
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Convert the certificate template to an image with better options
+      const imageData = await toPng(certificateTemplate, { 
+        quality: 1,
+        pixelRatio: 2,
+        backgroundColor: '#ffffff',
+        canvasWidth: 1684,
+        canvasHeight: 1190
+      });
+      
+      // Hide template again
+      certificateTemplate.style.display = 'none';
       
       // Create a new PDF with A4 dimensions
       const pdf = new jsPDF({

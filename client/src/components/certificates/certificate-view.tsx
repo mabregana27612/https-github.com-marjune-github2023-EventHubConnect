@@ -31,6 +31,33 @@ export function CertificateView({ certificate, speakerName = 'Event Speaker' }: 
   const handlePdfGenerated = (pdfDataUrl: string) => {
     setPdfUrl(pdfDataUrl);
     setLoading(false);
+    
+    // Store the PDF data in the session storage for direct download
+    try {
+      sessionStorage.setItem(`certificate-${certificate.id}`, pdfDataUrl);
+    } catch (error) {
+      console.error('Error storing PDF in session storage:', error);
+    }
+  };
+
+  // Direct download function that doesn't rely on iframe
+  const handleDirectDownload = () => {
+    if (pdfUrl) {
+      try {
+        // Create temporary link element
+        const link = document.createElement('a');
+        link.href = pdfUrl;
+        link.download = `Certificate_${certificate.eventTitle}_${certificate.userName}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } catch (error) {
+        console.error('Error during direct download:', error);
+        setError('Download failed. Please try again.');
+      }
+    } else {
+      setError('No PDF available. Please regenerate the certificate.');
+    }
   };
 
   // Trigger PDF generation
@@ -38,7 +65,15 @@ export function CertificateView({ certificate, speakerName = 'Event Speaker' }: 
     setLoading(true);
     setError(null);
     
-    // Find and click the hidden button in the CertificateGenerator component
+    // Try to get from session storage first
+    const cachedPdf = sessionStorage.getItem(`certificate-${certificate.id}`);
+    if (cachedPdf) {
+      setPdfUrl(cachedPdf);
+      setLoading(false);
+      return;
+    }
+    
+    // If not in session storage, generate new PDF
     setTimeout(() => {
       const generateButton = document.getElementById('generate-pdf-btn');
       if (generateButton) {

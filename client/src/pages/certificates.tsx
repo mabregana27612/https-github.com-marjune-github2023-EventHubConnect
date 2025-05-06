@@ -132,7 +132,11 @@ export default function Certificates() {
                             <div className="flex w-full justify-between">
                               <Dialog>
                                 <DialogTrigger asChild>
-                                  <Button variant="outline" size="sm">
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    data-certificate-id={certificate.id}
+                                  >
                                     <Eye className="mr-2 h-4 w-4" />
                                     View PDF
                                   </Button>
@@ -155,10 +159,22 @@ export default function Certificates() {
                               <Button 
                                 size="sm"
                                 onClick={() => {
-                                  // Trigger same certificate view's download functionality
-                                  const downloadBtn = document.getElementById(`certificate-download-${certificate.id}`);
-                                  if (downloadBtn) {
-                                    downloadBtn.click();
+                                  // Try to get the PDF from session storage
+                                  const cachedPdf = sessionStorage.getItem(`certificate-${certificate.id}`);
+                                  if (cachedPdf) {
+                                    // Create temporary link for direct download
+                                    const link = document.createElement('a');
+                                    link.href = cachedPdf;
+                                    link.download = `Certificate_${certificate.eventTitle}_${certificate.userName}.pdf`;
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    document.body.removeChild(link);
+                                  } else {
+                                    // If no cached PDF, trigger the dialog to open and generate first
+                                    const dialogBtn = document.querySelector(`[data-certificate-id="${certificate.id}"]`);
+                                    if (dialogBtn instanceof HTMLElement) {
+                                      dialogBtn.click();
+                                    }
                                   }
                                 }}
                               >
