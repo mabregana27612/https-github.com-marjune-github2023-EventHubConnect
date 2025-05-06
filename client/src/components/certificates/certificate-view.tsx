@@ -51,31 +51,42 @@ export function CertificateView({ certificate, speakerName = 'Event Speaker' }: 
     }
     
     try {
-      // Convert base64 data URL to Blob
-      const byteString = atob(pdfUrl.split(',')[1]);
-      const mimeString = pdfUrl.split(',')[0].split(':')[1].split(';')[0];
-      const ab = new ArrayBuffer(byteString.length);
-      const ia = new Uint8Array(ab);
-      
-      for (let i = 0; i < byteString.length; i++) {
-        ia[i] = byteString.charCodeAt(i);
-      }
-      
-      const blob = new Blob([ab], { type: mimeString });
-      const url = URL.createObjectURL(blob);
-      
-      // Create and trigger download link
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `Certificate_${certificate.eventTitle}_${certificate.userName}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      
-      // Clean up
-      setTimeout(() => {
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-      }, 100);
+      // For browsers that don't handle data URLs well for download, fetch the PDF data
+      // Create a separate fetch request for the PDF data
+      fetch('/api/certificates/download/' + certificate.id, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.blob();
+      })
+      .then(blob => {
+        // Create a blob URL
+        const url = URL.createObjectURL(blob);
+        
+        // Create a temporary anchor element
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Certificate_${certificate.eventTitle}_${certificate.userName}.pdf`;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        
+        // Clean up
+        setTimeout(() => {
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        }, 100);
+      })
+      .catch(error => {
+        console.error('Download error:', error);
+        setError('Failed to download certificate. Please try again.');
+      });
     } catch (error) {
       console.error('Error during direct download:', error);
       setError('Download failed. Please try again.');

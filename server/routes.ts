@@ -338,6 +338,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: (error as Error).message });
     }
   });
+  
+  // Download certificate endpoint
+  app.get(`${apiPrefix}/certificates/download/:id`, isAuthenticated, async (req, res) => {
+    try {
+      const registrationId = parseInt(req.params.id);
+      if (isNaN(registrationId)) {
+        return res.status(400).json({ error: "Invalid certificate ID" });
+      }
+      
+      // Get the registration to check ownership
+      const registration = await storage.getEventRegistration(registrationId);
+      
+      if (!registration) {
+        return res.status(404).json({ error: "Certificate not found" });
+      }
+      
+      // Check if user is authorized (either owner or admin)
+      if (registration.userId !== req.user.id && req.user.role !== 'admin') {
+        return res.status(403).json({ error: "Unauthorized access to certificate" });
+      }
+      
+      // Get the certificate data
+      const certificate = await storage.getCertificate(registrationId);
+      
+      if (!certificate) {
+        return res.status(404).json({ error: "Certificate data not found" });
+      }
+      
+      // Convert the certificate URL to a buffer and send as PDF
+      if (registration.certificateUrl) {
+        try {
+          // Parse the data URL
+          const dataUrlParts = registration.certificateUrl.split(',');
+          const base64Data = dataUrlParts[1];
+          const pdfBuffer = Buffer.from(base64Data, 'base64');
+          
+          // Set the appropriate headers
+          res.setHeader('Content-Type', 'application/pdf');
+          res.setHeader('Content-Disposition', `attachment; filename="Certificate_${registration.event?.title || "Event"}_${registration.user?.name || "Attendee"}.pdf"`);
+          res.setHeader('Content-Length', pdfBuffer.length);
+          
+          // Send the PDF data
+          res.send(pdfBuffer);
+        } catch (err) {
+          console.error('Error processing PDF data:', err);
+          res.status(500).json({ error: "Failed to process certificate data" });
+        }
+      } else {
+        res.status(404).json({ error: "Certificate file not found" });
+      }
+    } catch (error) {
+      console.error('Error downloading certificate:', error);
+      res.status(500).json({ error: "Failed to download certificate" });
+    }
+  });
 
   app.post(`${apiPrefix}/events/:id/certificate`, isAuthenticated, async (req, res) => {
     try {

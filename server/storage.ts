@@ -50,8 +50,10 @@ export interface IStorage {
   markAttendance: (registrationId: number) => Promise<boolean>;
   
   // Certificate methods
-  generateCertificate: (registrationId: number) => Promise<any>;
+  generateCertificate: (registrationId: number, speakerSignature?: string | null) => Promise<any>;
   getUserCertificates: (userId: number) => Promise<any[]>;
+  getCertificate: (registrationId: number) => Promise<any>;
+  getEventRegistration: (registrationId: number) => Promise<any>;
   
   // Activity logging
   logActivity: (userId: number, action: string, description: string) => Promise<any>;
