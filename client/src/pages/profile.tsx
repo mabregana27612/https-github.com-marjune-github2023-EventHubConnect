@@ -18,6 +18,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { SignatureUpload } from "@/components/profile/signature-upload";
 
 type UserProfile = User & {
   attendedEvents: {
@@ -300,71 +301,19 @@ export default function Profile() {
                       <TabsContent value="certificates">
                         <div className="px-4 py-5 sm:px-6">
                           {isSpeaker && (
-                            <div className="mb-8 border rounded-md p-4">
+                            <div className="mb-8">
                               <h3 className="text-lg font-medium mb-2">Speaker Signature</h3>
                               <p className="text-sm text-gray-500 mb-4">
-                                Upload your signature to be used on certificates. This will be displayed on certificates for events where you are a speaker.
+                                Create or upload your signature to be used on certificates. This will be displayed on certificates for events where you are a speaker.
                               </p>
-                              <div className="flex items-start space-x-4">
-                                <div className="border rounded-md p-4 bg-gray-50 w-48 h-24 flex items-center justify-center">
-                                  {profile.signatureImage ? (
-                                    <img 
-                                      src={profile.signatureImage} 
-                                      alt="Signature" 
-                                      className="max-w-full max-h-full"
-                                    />
-                                  ) : (
-                                    <p className="text-sm text-gray-400">No signature uploaded</p>
-                                  )}
-                                </div>
-                                <div>
-                                  <label
-                                    className="cursor-pointer"
-                                  >
-                                    <Button 
-                                      variant="outline" 
-                                      type="button"
-                                      onClick={() => {}}
-                                    >
-                                      Upload Signature
-                                    </Button>
-                                    <input
-                                      type="file"
-                                      accept="image/png"
-                                      className="hidden"
-                                      onChange={(e) => {
-                                        const file = e.target.files?.[0];
-                                        if (file) {
-                                          const reader = new FileReader();
-                                          reader.onload = async (event) => {
-                                            try {
-                                              const base64Image = event.target?.result as string;
-                                              await apiRequest("PATCH", "/api/profile/signature", {
-                                                signatureImage: base64Image
-                                              });
-                                              queryClient.invalidateQueries({ queryKey: ["/api/profile"] });
-                                              toast({
-                                                title: "Signature uploaded",
-                                                description: "Your signature has been updated successfully."
-                                              });
-                                            } catch (error) {
-                                              toast({
-                                                title: "Upload failed",
-                                                description: error instanceof Error ? error.message : "Failed to upload signature",
-                                                variant: "destructive"
-                                              });
-                                            }
-                                          };
-                                          reader.readAsDataURL(file);
-                                        }
-                                      }}
-                                    />
-                                  </label>
-                                  <p className="text-xs text-gray-500 mt-2">
-                                    Upload a transparent PNG image of your signature.
-                                  </p>
-                                </div>
-                              </div>
+                              
+                              {/* Use the new SignatureUpload component */}
+                              {profile && (
+                                <SignatureUpload 
+                                  currentSignature={profile.signatureImage} 
+                                  userId={profile.id} 
+                                />
+                              )}
                             </div>
                           )}
                           
