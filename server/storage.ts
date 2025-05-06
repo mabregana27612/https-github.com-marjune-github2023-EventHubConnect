@@ -572,6 +572,57 @@ class DatabaseStorage implements IStorage {
     
     return certificateData;
   }
+  
+  async getCertificate(registrationId: number): Promise<any> {
+    // Get a specific certificate by registration ID
+    const registration = await db.query.eventRegistrations.findFirst({
+      where: and(
+        eq(eventRegistrations.id, registrationId),
+        eq(eventRegistrations.certificateGenerated, true)
+      ),
+      with: {
+        event: true,
+        user: true,
+      },
+    });
+    
+    if (!registration) {
+      throw new Error('Certificate not found');
+    }
+    
+    const certificate = await db.query.certificates.findFirst({
+      where: eq(certificates.registrationId, registrationId),
+    });
+    
+    return {
+      id: registration.id,
+      eventId: registration.eventId,
+      eventTitle: registration.event?.title,
+      userId: registration.userId,
+      userName: registration.user?.name,
+      certificateUrl: registration.certificateUrl,
+      issuedAt: registration.attendanceTime,
+      eventDate: registration.event?.eventDate,
+      speakerSignature: certificate?.speakerSignature,
+    };
+  }
+  
+  async getEventRegistration(registrationId: number): Promise<any> {
+    // Get a specific registration by ID
+    const registration = await db.query.eventRegistrations.findFirst({
+      where: eq(eventRegistrations.id, registrationId),
+      with: {
+        event: true,
+        user: true,
+      },
+    });
+    
+    if (!registration) {
+      throw new Error('Registration not found');
+    }
+    
+    return registration;
+  }
 
   // Activity logging
   async logActivity(userId: number, action: string, description: string): Promise<any> {
