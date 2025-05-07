@@ -4,6 +4,9 @@ import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { z } from "zod";
 import { insertUserSchema, insertEventSchema } from "@shared/schema";
+import { sendEmail, generatePasswordResetEmail } from "./email";
+import { scrypt, randomBytes, timingSafeEqual } from "crypto";
+import { promisify } from "util";
 
 const isAuthenticated = (req: Request, res: Response, next: Function) => {
   if (req.isAuthenticated()) {
@@ -32,6 +35,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // API routes
   const apiPrefix = '/api';
+  
+  // Password reset routes
+  const scryptAsync = promisify(scrypt);
+  
+  async function hashPassword(password: string) {
+    const salt = randomBytes(16).toString("hex");
+    const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+    return `${buf.toString("hex")}.${salt}`;
+  }
+  
+  app.post(`${apiPrefix}/forgot-password`, async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+      
+      // Find user by email
+      const user = await storage.getUserByEmail(email);
+      
+      if (!user) {
+        // Don't reveal that the email doesn't exist
+        return res.status(200).json({ message: "If your email is registered, you will receive a password reset link" });
+      }
+      
+      // Generate token and store it
+      const token = await storage.createPasswordResetToken(user.id);
+      
+      // Generate reset link
+      const resetLink = `${req.protocol}://${req.get('host')}${apiPrefix}/reset-password?token=${token}`;
+      
+      // Send email
+      const emailResult = await sendEmail(generatePasswordResetEmail(user.email, user.name || user.username, resetLink));
+      
+      if (!emailResult) {
+        return res.status(500).json({ message: "Failed to send password reset email" });
+      }
+      
+      res.status(200).json({ message: "Password reset email sent" });
+    } catch (error) {
+      console.error('Password reset request error:', error);
+      res.status(500).json({ message: "An error occurred processing your request" });
+    }
+  });
+  
+  app.post(`${apiPrefix}/reset-password`, async (req, res) => {
+    try {
+      const { token, password } = req.body;
+      
+      if (!token || !password) {
+        return res.status(400).json({ message: "Token and password are required" });
+      }
+      
+      // Validate password
+      if (password.length < 8) {
+        return res.status(400).json({ message: "Password must be at least 8 characters long" });
+      }
+      
+      // Verify token and get user
+      const resetToken = await storage.getPasswordResetToken(token);
+      
+      // Hash the new password
+      const hashedPassword = await hashPassword(password);
+      
+      // Update user password
+      const updated = await storage.updateUserPassword(resetToken.user.id, hashedPassword);
+      
+      if (!updated) {
+        return res.status(500).json({ message: "Failed to update password" });
+      }
+      
+      // Mark token as used
+      await storage.markTokenAsUsed(token);
+      
+      res.status(200).json({ message: "Password has been reset successfully" });
+    } catch (error) {
+      console.error('Password reset error:', error);
+      if (error instanceof Error && (
+          error.message === 'Invalid or expired token' || 
+          error.message === 'Token has expired' ||
+          error.message === 'Token has already been used')) {
+        return res.status(400).json({ message: error.message });
+      }
+      res.status(500).json({ message: "An error occurred processing your request" });
+    }
+  });
 
   // Google Authentication
   app.post(`${apiPrefix}/auth/google`, async (req, res) => {

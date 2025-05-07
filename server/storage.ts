@@ -7,10 +7,13 @@ import {
   eventRegistrations, 
   certificates, 
   activityLogs,
+  passwordResetTokens,
+  sessions,
   InsertUser,
   User,
   insertUserSchema,
 } from "@shared/schema";
+import { randomBytes } from "crypto";
 import { eq, and, desc, gt, lt, sql } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
