@@ -212,19 +212,29 @@ export function setupAuth(app: Express) {
   // Google OAuth routes
   app.get("/api/auth/google", (req, res, next) => {
     // Log the full URL that Google will redirect back to
-    console.log(`Auth initiated, callback will be at: ${getFullCallbackUrl(req)}`);
+    const fullCallbackUrl = getFullCallbackUrl(req);
+    console.log(`Auth initiated, callback will be at: ${fullCallbackUrl}`);
+    
+    // Update strategy to use dynamic callback URL
+    // For Google OAuth, we need to override the static callback URL
+    const googleStrategy = passport._strategies.google as GoogleStrategy;
+    if (googleStrategy) {
+      // Cast to any to access/modify the private _callbackURL property
+      (googleStrategy as any)._callbackURL = fullCallbackUrl;
+      console.log("Updated Google strategy callback URL");
+    }
     
     // Standard passport authenticate with Google strategy
-    passport.authenticate("google", { 
+    passport.authenticate("google", {
       scope: ["profile", "email"]
-    })(req, res, next);
+    } as any)(req, res, next);
   });
   
   app.get(CALLBACK_URL, 
     // Standard passport callback handling
-    passport.authenticate("google", { 
-      failureRedirect: "/auth" 
-    }),
+    passport.authenticate("google", {
+      failureRedirect: "/auth"
+    } as any),
     (req, res) => {
       // Successful authentication, redirect to home page
       console.log("Authentication successful, redirecting to home page");
