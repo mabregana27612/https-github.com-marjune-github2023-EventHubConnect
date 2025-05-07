@@ -11,6 +11,11 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { AlertCircle, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 
@@ -26,10 +31,35 @@ const registerSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
 });
 
+const forgotPasswordSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+});
+
+const resetPasswordSchema = z.object({
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  confirmPassword: z.string().min(8, "Confirm password must be at least 8 characters"),
+}).refine(data => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+});
+
 export default function AuthPage() {
   const [activeTab, setActiveTab] = useState<string>("login");
   const { loginMutation, registerMutation, user } = useAuth();
   const [_, setLocation] = useLocation();
+  const { toast } = useToast();
+  const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState(false);
+  
+  // Get URL parameters for reset token
+  const searchParams = new URLSearchParams(window.location.search);
+  const resetToken = searchParams.get('token');
+  
+  useEffect(() => {
+    // If there's a reset token, automatically switch to reset password tab
+    if (resetToken) {
+      setActiveTab('reset-password');
+    }
+  }, [resetToken]);
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -46,6 +76,71 @@ export default function AuthPage() {
       password: "",
       name: "",
       email: "",
+    },
+  });
+  
+  const forgotPasswordForm = useForm<z.infer<typeof forgotPasswordSchema>>({
+    resolver: zodResolver(forgotPasswordSchema),
+    defaultValues: {
+      email: "",
+    },
+  });
+  
+  const resetPasswordForm = useForm<z.infer<typeof resetPasswordSchema>>({
+    resolver: zodResolver(resetPasswordSchema),
+    defaultValues: {
+      password: "",
+      confirmPassword: "",
+    },
+  });
+  
+  // Forgot password mutation
+  const forgotPasswordMutation = useMutation({
+    mutationFn: async (data: z.infer<typeof forgotPasswordSchema>) => {
+      const response = await apiRequest('POST', '/api/forgot-password', data);
+      return await response.json();
+    },
+    onSuccess: () => {
+      setForgotPasswordSuccess(true);
+      toast({
+        title: "Reset link sent",
+        description: "If your email is registered, you will receive a password reset link",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send reset link",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Reset password mutation
+  const resetPasswordMutation = useMutation({
+    mutationFn: async (data: z.infer<typeof resetPasswordSchema>) => {
+      const response = await apiRequest('POST', '/api/reset-password', {
+        token: resetToken,
+        password: data.password,
+      });
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Password reset successful",
+        description: "Your password has been updated. You can now log in with your new password.",
+      });
+      // Redirect to login page after successful reset
+      setActiveTab('login');
+      // Clear the token from URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to reset password",
+        variant: "destructive",
+      });
     },
   });
 
@@ -119,6 +214,16 @@ export default function AuthPage() {
                           </FormItem>
                         )}
                       />
+                      <div className="flex justify-end mb-2">
+                        <Button 
+                          variant="link" 
+                          className="p-0 h-auto text-sm" 
+                          type="button"
+                          onClick={() => setActiveTab("forgot-password")}
+                        >
+                          Forgot password?
+                        </Button>
+                      </div>
                       <Button 
                         type="submit" 
                         className="w-full" 

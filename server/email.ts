@@ -1,11 +1,14 @@
 import { MailService } from '@sendgrid/mail';
 
-if (!process.env.SENDGRID_API_KEY) {
+// Check if the SendGrid API key is available
+const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || '';
+if (!SENDGRID_API_KEY) {
   console.error("SENDGRID_API_KEY environment variable is not set");
 }
 
+// Init with the available API key - we'll handle errors if it's not valid
 const mailService = new MailService();
-mailService.setApiKey(process.env.SENDGRID_API_KEY || '');
+mailService.setApiKey(SENDGRID_API_KEY);
 
 export interface EmailParams {
   to: string;
@@ -16,14 +19,22 @@ export interface EmailParams {
 }
 
 export async function sendEmail(params: EmailParams): Promise<boolean> {
+  // Check if SendGrid API key is available
+  if (!SENDGRID_API_KEY) {
+    console.error('No SendGrid API key found. Email not sent.');
+    return false;
+  }
+
   try {
-    await mailService.send({
+    const msg = {
       to: params.to,
       from: params.from,
       subject: params.subject,
-      text: params.text,
-      html: params.html,
-    });
+      text: params.text || '',
+      html: params.html || ''
+    };
+
+    await mailService.send(msg as any);
     console.log(`Email sent to ${params.to}`);
     return true;
   } catch (error) {
@@ -34,6 +45,7 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
 
 export function generatePasswordResetEmail(
   to: string,
+  name: string,
   resetLink: string
 ): EmailParams {
   const fromEmail = 'noreply@eventpro.com'; // Replace with your actual sender email
@@ -42,13 +54,13 @@ export function generatePasswordResetEmail(
     to,
     from: fromEmail,
     subject: 'EventPro - Password Reset Request',
-    text: `You requested to reset your password. Please click the following link to reset your password: ${resetLink}`,
+    text: `Hello ${name},\n\nYou requested to reset your password. Please click the following link to reset your password: ${resetLink}\n\nIf you didn't request a password reset, you can safely ignore this email.\n\nThis link will expire in 1 hour for security reasons.\n\n© ${new Date().getFullYear()} EventPro. All rights reserved.`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
         <div style="text-align: center; margin-bottom: 20px;">
           <h1 style="color: #4f46e5;">EventPro</h1>
         </div>
-        <p>Hello,</p>
+        <p>Hello ${name},</p>
         <p>We received a request to reset your password. To complete the process, please click the button below:</p>
         <div style="text-align: center; margin: 30px 0;">
           <a href="${resetLink}" style="background-color: #4f46e5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold;">Reset Password</a>
