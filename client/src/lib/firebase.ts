@@ -21,8 +21,18 @@ const auth = getAuth(firebaseApp);
 
 // Create Google provider instance
 const googleProvider = new GoogleAuthProvider();
+
+// Add scopes for additional permissions if needed
+googleProvider.addScope('profile');
+googleProvider.addScope('email');
+
+// Set custom parameters
 googleProvider.setCustomParameters({
   prompt: 'select_account',
+  // This ensures that the redirected authentication response contains an ID token
+  access_type: 'offline',
+  // Include the user's email in the sign-in process 
+  login_hint: 'user@example.com'
 });
 
 export { auth, googleProvider };

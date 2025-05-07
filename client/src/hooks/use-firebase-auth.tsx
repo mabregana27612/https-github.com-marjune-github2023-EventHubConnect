@@ -40,49 +40,65 @@ export function FirebaseAuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const handleRedirectResult = async () => {
       try {
+        console.log("Checking for redirect result...");
         const result = await getRedirectResult(auth);
+        console.log("Redirect result:", result ? "Success" : "No result");
         
         if (result) {
           // Get user info from result
           const user = result.user;
+          console.log("Firebase user obtained:", user.email);
           
-          // Send the Firebase ID token to your backend
-          const idToken = await user.getIdToken();
-          
-          // Check if user is already authenticated with our server
-          // If yes, this is an account linking action, otherwise it's a login/registration
-          const isAuthenticated = queryClient.getQueryData(['/api/user']);
-          
-          if (isAuthenticated) {
-            // This is an account linking
-            const res = await apiRequest('POST', '/api/auth/link-google', { idToken });
+          try {
+            // Send the Firebase ID token to your backend
+            const idToken = await user.getIdToken(true); // Force token refresh
+            console.log("ID token obtained, proceeding with server auth");
             
-            if (res.ok) {
-              // Invalidate the user query to refresh the user data
-              queryClient.invalidateQueries({ queryKey: ['/api/user'] });
-              
-              toast({
-                title: 'Account linked',
-                description: 'Your account has been successfully linked with Google',
-              });
-            } else {
-              throw new Error('Failed to link your account');
-            }
-          } else {
-            // This is a sign in or registration
-            const res = await apiRequest('POST', '/api/auth/google', { idToken });
+            // Check if user is already authenticated with our server
+            // If yes, this is an account linking action, otherwise it's a login/registration
+            const isAuthenticated = queryClient.getQueryData(['/api/user']);
             
-            if (res.ok) {
-              // Invalidate the user query to refresh the user data
-              queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+            if (isAuthenticated) {
+              console.log("Existing user detected, linking account");
+              // This is an account linking
+              const res = await apiRequest('POST', '/api/auth/link-google', { idToken });
               
-              toast({
-                title: 'Successfully signed in',
-                description: 'You have successfully signed in with Google',
-              });
+              if (res.ok) {
+                // Invalidate the user query to refresh the user data
+                queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+                
+                toast({
+                  title: 'Account linked',
+                  description: 'Your account has been successfully linked with Google',
+                });
+              } else {
+                throw new Error('Failed to link your account');
+              }
             } else {
-              throw new Error('Failed to authenticate with the server');
+              console.log("New sign-in, proceeding with authentication");
+              // This is a sign in or registration
+              const res = await apiRequest('POST', '/api/auth/google', { idToken });
+              
+              if (res.ok) {
+                // Invalidate the user query to refresh the user data
+                queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+                
+                toast({
+                  title: 'Successfully signed in',
+                  description: 'You have successfully signed in with Google',
+                });
+              } else {
+                const errorData = await res.json();
+                throw new Error(errorData.message || 'Failed to authenticate with the server');
+              }
             }
+          } catch (serverError) {
+            console.error("Server authentication error:", serverError);
+            toast({
+              title: 'Server authentication failed',
+              description: serverError instanceof Error ? serverError.message : 'Failed to authenticate with the server',
+              variant: 'destructive',
+            });
           }
         }
       } catch (error) {
@@ -99,6 +115,7 @@ export function FirebaseAuthProvider({ children }: { children: ReactNode }) {
       }
     };
     
+    // Execute immediately
     handleRedirectResult();
   }, [toast, queryClient]);
 

@@ -42,60 +42,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Firebase ID token is required" });
       }
       
-      // In a real implementation, you would verify the Firebase ID token here
-      // using the Firebase Admin SDK to ensure the token is valid
-      // For simplicity in this demo, we'll extract the email and name directly
-      // For a production app, install firebase-admin and use:
-      // const decodedToken = await admin.auth().verifyIdToken(idToken);
+      console.log("Processing Google authentication with token");
       
-      // For this demo, we'll parse the token manually
-      // Note: This is NOT secure for production use
-      const tokenPayload = JSON.parse(Buffer.from(idToken.split('.')[1], 'base64').toString());
-      const email = tokenPayload.email || "demo-user@example.com";
-      const name = tokenPayload.name || "Google User";
-      
-      console.log("Google login for:", email);
-      
-      // Check if user exists
-      const existingUser = await storage.getUserByEmail(email);
-      
-      if (existingUser) {
-        // Log in the existing user
-        req.login(existingUser, (err) => {
-          if (err) {
-            return res.status(500).json({ message: "Session error" });
-          }
-          return res.status(200).json(existingUser);
-        });
-      } else {
-        // Create a new user
+      try {
+        // In a real implementation, you would verify the Firebase ID token here
+        // using the Firebase Admin SDK to ensure the token is valid
+        // For simplicity in this demo, we'll extract the email and name directly
+        
+        // Parse the token (simplified, not for production)
+        const parts = idToken.split('.');
+        if (parts.length < 2) {
+          throw new Error("Invalid token format");
+        }
+        
+        // Base64url decode and parse payload
+        let payload;
         try {
-          // Generate a username from email (first part of email + random number)
-          let username = email.split('@')[0];
-          // Add a random suffix to avoid username collisions
-          username = username + Math.floor(Math.random() * 1000);
+          // Handle base64url format (replace chars and add padding)
+          const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+          const padding = '='.repeat((4 - base64.length % 4) % 4);
           
-          // Generate a secure random password (user won't need this since they'll use Google auth)
-          const password = Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-10);
-          
-          const newUser = await storage.createUser({
-            username,
-            email,
-            name,
-            password, // This gets hashed in the storage.createUser method
-            role: 'user',
-          });
-          
-          req.login(newUser, (err) => {
+          payload = JSON.parse(Buffer.from(base64 + padding, 'base64').toString());
+        } catch (parseError) {
+          console.error("Token parse error:", parseError);
+          return res.status(400).json({ message: "Invalid token format" });
+        }
+        
+        console.log("Token payload parsed successfully");
+        
+        // Extract user information from payload
+        const email = payload.email;
+        const name = payload.name || email.split('@')[0];
+        
+        if (!email) {
+          return res.status(400).json({ message: "Email not found in token" });
+        }
+        
+        console.log("Google login for:", email);
+        
+        // Check if user exists
+        const existingUser = await storage.getUserByEmail(email);
+        
+        if (existingUser) {
+          console.log("Existing user found, logging in");
+          // Log in the existing user
+          req.login(existingUser, (err) => {
             if (err) {
+              console.error("Session error during login:", err);
               return res.status(500).json({ message: "Session error" });
             }
-            return res.status(201).json(newUser);
+            return res.status(200).json(existingUser);
           });
-        } catch (createError) {
-          console.error("Error creating new user:", createError);
-          return res.status(500).json({ message: "Failed to create user account" });
+        } else {
+          console.log("Creating new user for:", email);
+          // Create a new user
+          try {
+            // Generate a username from email (first part of email + random number)
+            let username = email.split('@')[0];
+            // Add a random suffix to avoid username collisions
+            username = username + Math.floor(Math.random() * 1000);
+            
+            // Generate a secure random password (user won't need this since they'll use Google auth)
+            const password = Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-10);
+            
+            const newUser = await storage.createUser({
+              username,
+              email,
+              name,
+              password, // This gets hashed in the storage.createUser method
+              role: 'user',
+            });
+            
+            console.log("New user created, logging in");
+            req.login(newUser, (err) => {
+              if (err) {
+                console.error("Session error during new user login:", err);
+                return res.status(500).json({ message: "Session error" });
+              }
+              return res.status(201).json(newUser);
+            });
+          } catch (createError) {
+            console.error("Error creating new user:", createError);
+            return res.status(500).json({ message: "Failed to create user account", error: createError instanceof Error ? createError.message : String(createError) });
+          }
         }
+      } catch (tokenError) {
+        console.error("Token validation error:", tokenError);
+        return res.status(400).json({ message: "Invalid or expired token", error: tokenError instanceof Error ? tokenError.message : String(tokenError) });
       }
     } catch (error) {
       console.error("Google auth error:", error);
@@ -113,15 +146,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Firebase ID token is required" });
       }
       
-      // In a real implementation, you would verify the Firebase ID token
-      // and update the user record with Google credentials
-      // const decodedToken = await admin.auth().verifyIdToken(idToken);
+      console.log("Processing Google account linking");
       
-      // For now, we'll just return success
-      res.status(200).json({ message: "Account linked successfully" });
+      try {
+        // Parse the token (simplified, not for production)
+        const parts = idToken.split('.');
+        if (parts.length < 2) {
+          throw new Error("Invalid token format");
+        }
+        
+        // Base64url decode and parse payload
+        let payload;
+        try {
+          // Handle base64url format (replace chars and add padding)
+          const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+          const padding = '='.repeat((4 - base64.length % 4) % 4);
+          
+          payload = JSON.parse(Buffer.from(base64 + padding, 'base64').toString());
+        } catch (parseError) {
+          console.error("Token parse error:", parseError);
+          return res.status(400).json({ message: "Invalid token format" });
+        }
+        
+        // Extract email from token
+        const email = payload.email;
+        
+        if (!email) {
+          return res.status(400).json({ message: "Email not found in token" });
+        }
+        
+        console.log("Google account linking for email:", email);
+        
+        // Check if another user already has this email
+        const existingUser = await storage.getUserByEmail(email);
+        if (existingUser && existingUser.id !== userId) {
+          return res.status(400).json({ 
+            message: "This Google account is already linked to another user" 
+          });
+        }
+        
+        // In a real implementation, you would:
+        // 1. Update the user record with a reference to the Google account ID
+        // 2. Store the Google credentials (safely) 
+        
+        // For this demo, we'll just log success
+        console.log("Account linked successfully for user ID:", userId);
+        
+        // Return success
+        res.status(200).json({ message: "Account linked successfully" });
+      } catch (tokenError) {
+        console.error("Token validation error:", tokenError);
+        return res.status(400).json({ 
+          message: "Invalid or expired token", 
+          error: tokenError instanceof Error ? tokenError.message : String(tokenError) 
+        });
+      }
     } catch (error) {
       console.error("Google account linking error:", error);
-      res.status(500).json({ message: "Failed to link account" });
+      res.status(500).json({ 
+        message: "Failed to link account",
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 
