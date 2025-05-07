@@ -101,12 +101,22 @@ export default function AuthPage() {
       const response = await apiRequest('POST', '/api/forgot-password', data);
       return await response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       setForgotPasswordSuccess(true);
-      toast({
-        title: "Reset link sent",
-        description: "If your email is registered, you will receive a password reset link",
-      });
+      
+      // Check if we have a direct reset link (for testing)
+      if (data.resetLink) {
+        setTempResetLink(data.resetLink);
+        toast({
+          title: "Testing mode",
+          description: "A reset link has been generated for testing. Click the link below to reset your password.",
+        });
+      } else {
+        toast({
+          title: "Reset link sent",
+          description: "If your email is registered, you will receive a password reset link",
+        });
+      }
     },
     onError: (error: Error) => {
       toast({
@@ -401,9 +411,29 @@ export default function AuthPage() {
                   {forgotPasswordSuccess ? (
                     <Alert className="bg-green-50 border-green-200 mb-4">
                       <CheckCircle2 className="h-4 w-4 text-green-600" />
-                      <AlertTitle className="text-green-800">Email sent</AlertTitle>
+                      <AlertTitle className="text-green-800">
+                        {tempResetLink ? "Reset Link Generated (Testing Mode)" : "Email sent"}
+                      </AlertTitle>
                       <AlertDescription className="text-green-700">
-                        If your email address is associated with an account, you will receive password reset instructions.
+                        {tempResetLink ? (
+                          <div className="space-y-2">
+                            <p>A reset link has been generated for testing. Click the button below to reset your password:</p>
+                            <Button 
+                              className="mt-2" 
+                              variant="outline" 
+                              onClick={() => {
+                                setActiveTab('reset-password');
+                                window.history.pushState({}, document.title, tempResetLink);
+                                // Trigger the token effect
+                                window.location.search = new URL(window.location.href).search;
+                              }}
+                            >
+                              Go to Reset Password Page
+                            </Button>
+                          </div>
+                        ) : (
+                          "If your email address is associated with an account, you will receive password reset instructions."
+                        )}
                       </AlertDescription>
                     </Alert>
                   ) : (
