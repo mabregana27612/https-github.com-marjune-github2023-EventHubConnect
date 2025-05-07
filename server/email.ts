@@ -1,9 +1,11 @@
 import { MailService } from '@sendgrid/mail';
 
-// Check if the SendGrid API key is available
+// Check if the SendGrid API key is available and valid
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || '';
 if (!SENDGRID_API_KEY) {
   console.error("SENDGRID_API_KEY environment variable is not set");
+} else if (!SENDGRID_API_KEY.startsWith('SG.')) {
+  console.error("API key does not start with \"SG.\"");
 }
 
 // Init with the available API key - we'll handle errors if it's not valid
@@ -19,9 +21,14 @@ export interface EmailParams {
 }
 
 export async function sendEmail(params: EmailParams): Promise<boolean> {
-  // Check if SendGrid API key is available
+  // Check if SendGrid API key is available and valid
   if (!SENDGRID_API_KEY) {
     console.error('No SendGrid API key found. Email not sent.');
+    return false;
+  }
+  
+  if (!SENDGRID_API_KEY.startsWith('SG.')) {
+    console.error('Invalid SendGrid API key format. Email not sent.');
     return false;
   }
 
