@@ -217,7 +217,7 @@ export function setupAuth(app: Express) {
     
     // Update strategy to use dynamic callback URL
     // For Google OAuth, we need to override the static callback URL
-    const googleStrategy = passport._strategies.google as GoogleStrategy;
+    const googleStrategy = (passport as any).strategies?.google as GoogleStrategy;
     if (googleStrategy) {
       // Cast to any to access/modify the private _callbackURL property
       (googleStrategy as any)._callbackURL = fullCallbackUrl;

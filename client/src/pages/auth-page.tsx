@@ -161,6 +161,14 @@ export default function AuthPage() {
     });
   };
 
+  const onForgotPasswordSubmit = (data: z.infer<typeof forgotPasswordSchema>) => {
+    forgotPasswordMutation.mutate(data);
+  };
+  
+  const onResetPasswordSubmit = (data: z.infer<typeof resetPasswordSchema>) => {
+    resetPasswordMutation.mutate(data);
+  };
+
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
       {/* Left Side - Form */}
@@ -172,7 +180,7 @@ export default function AuthPage() {
           </div>
 
           <Tabs defaultValue="login" value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-8">
+            <TabsList className={`grid w-full ${resetToken ? 'hidden' : activeTab === 'forgot-password' ? 'grid-cols-2' : 'grid-cols-2'} mb-8`}>
               <TabsTrigger value="login">Login</TabsTrigger>
               <TabsTrigger value="register">Register</TabsTrigger>
             </TabsList>
@@ -364,6 +372,152 @@ export default function AuthPage() {
                     </Button>
                   </div>
                 </CardFooter>
+              </Card>
+            </TabsContent>
+            
+            {/* Forgot Password Tab */}
+            <TabsContent value="forgot-password">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setActiveTab("login")}
+                      className="mr-2 p-0 h-8 w-8"
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                    </Button>
+                    <div>
+                      <CardTitle>Forgot Password</CardTitle>
+                      <CardDescription>
+                        Enter your email to reset your password
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {forgotPasswordSuccess ? (
+                    <Alert className="bg-green-50 border-green-200 mb-4">
+                      <CheckCircle2 className="h-4 w-4 text-green-600" />
+                      <AlertTitle className="text-green-800">Email sent</AlertTitle>
+                      <AlertDescription className="text-green-700">
+                        If your email address is associated with an account, you will receive password reset instructions.
+                      </AlertDescription>
+                    </Alert>
+                  ) : (
+                    <Form {...forgotPasswordForm}>
+                      <form onSubmit={forgotPasswordForm.handleSubmit(onForgotPasswordSubmit)} className="space-y-4">
+                        <FormField
+                          control={forgotPasswordForm.control}
+                          name="email"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Email</FormLabel>
+                              <FormControl>
+                                <Input type="email" placeholder="Enter your email address" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <Button
+                          type="submit"
+                          className="w-full"
+                          disabled={forgotPasswordMutation.isPending}
+                        >
+                          {forgotPasswordMutation.isPending ? "Sending..." : "Send Reset Link"}
+                        </Button>
+                      </form>
+                    </Form>
+                  )}
+                </CardContent>
+                <CardFooter className="flex flex-col space-y-2">
+                  <div className="text-sm text-center w-full">
+                    Remember your password?{" "}
+                    <Button
+                      variant="link"
+                      className="p-0"
+                      onClick={() => setActiveTab("login")}
+                    >
+                      Back to login
+                    </Button>
+                  </div>
+                </CardFooter>
+              </Card>
+            </TabsContent>
+            
+            {/* Reset Password Tab */}
+            <TabsContent value="reset-password">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Reset Your Password</CardTitle>
+                  <CardDescription>
+                    Enter a new password for your account
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {!resetToken ? (
+                    <Alert variant="destructive" className="mb-4">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertTitle>Invalid or Expired Token</AlertTitle>
+                      <AlertDescription>
+                        This password reset link is invalid or has expired. Please request a new one.
+                      </AlertDescription>
+                    </Alert>
+                  ) : (
+                    <Form {...resetPasswordForm}>
+                      <form onSubmit={resetPasswordForm.handleSubmit(onResetPasswordSubmit)} className="space-y-4">
+                        <FormField
+                          control={resetPasswordForm.control}
+                          name="password"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>New Password</FormLabel>
+                              <FormControl>
+                                <Input type="password" placeholder="Enter your new password" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={resetPasswordForm.control}
+                          name="confirmPassword"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Confirm Password</FormLabel>
+                              <FormControl>
+                                <Input type="password" placeholder="Confirm your new password" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <Button
+                          type="submit"
+                          className="w-full"
+                          disabled={resetPasswordMutation.isPending}
+                        >
+                          {resetPasswordMutation.isPending ? "Resetting..." : "Reset Password"}
+                        </Button>
+                      </form>
+                    </Form>
+                  )}
+                </CardContent>
+                {!resetToken && (
+                  <CardFooter className="flex flex-col space-y-2">
+                    <div className="text-sm text-center w-full">
+                      <Button
+                        variant="link"
+                        className="p-0"
+                        onClick={() => setActiveTab("forgot-password")}
+                      >
+                        Request a new reset link
+                      </Button>
+                    </div>
+                  </CardFooter>
+                )}
               </Card>
             </TabsContent>
           </Tabs>

@@ -20,6 +20,8 @@ function Router() {
   return (
     <Switch>
       <Route path="/auth" component={AuthPage} />
+      {/* Allow accessing reset password page without authentication */}
+      <Route path="/reset-password" component={AuthPage} />
       <ProtectedRoute path="/" component={HomePage} />
       <ProtectedRoute path="/dashboard" component={Dashboard} />
       <ProtectedRoute path="/events" component={Events} />
