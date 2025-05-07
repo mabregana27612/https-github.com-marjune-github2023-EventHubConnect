@@ -12,8 +12,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 
-// Temporary placeholder component to prevent errors
-const GoogleSignInButton = ({ fullWidth, variant, text }: { fullWidth?: boolean; variant?: string; text?: string }) => null;
+import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 
 const loginSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters"),
@@ -130,7 +129,18 @@ export default function AuthPage() {
                     </form>
                   </Form>
                   
-                  {/* Google Sign In functionality temporarily disabled */}
+                  <div className="relative my-4">
+                    <div className="absolute inset-0 flex items-center">
+                      <Separator className="w-full" />
+                    </div>
+                    <div className="relative flex justify-center">
+                      <span className="bg-white px-2 text-sm text-gray-500">
+                        Or continue with
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <GoogleSignInButton fullWidth variant="outline" />
                 </CardContent>
                 <CardFooter className="flex flex-col space-y-2">
                   <div className="text-sm text-center w-full">
@@ -220,7 +230,22 @@ export default function AuthPage() {
                     </form>
                   </Form>
                   
-                  {/* Google Sign In functionality temporarily disabled */}
+                  <div className="relative my-4">
+                    <div className="absolute inset-0 flex items-center">
+                      <Separator className="w-full" />
+                    </div>
+                    <div className="relative flex justify-center">
+                      <span className="bg-white px-2 text-sm text-gray-500">
+                        Or continue with
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <GoogleSignInButton 
+                    fullWidth 
+                    variant="outline" 
+                    text="Sign up with Google"
+                  />
                 </CardContent>
                 <CardFooter className="flex flex-col space-y-2">
                   <div className="text-sm text-center w-full">

@@ -1,6 +1,4 @@
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { useFirebaseAuth } from '@/hooks/use-firebase-auth';
 import { FaGoogle } from 'react-icons/fa';
 
 interface GoogleSignInButtonProps {
@@ -16,16 +14,10 @@ export function GoogleSignInButton({
   text = 'Sign in with Google',
   fullWidth = false,
 }: GoogleSignInButtonProps) {
-  const { signInWithGoogle, isLoading } = useFirebaseAuth();
-  const [localLoading, setLocalLoading] = useState(false);
-
-  const handleSignIn = async () => {
-    setLocalLoading(true);
-    try {
-      await signInWithGoogle();
-    } finally {
-      setLocalLoading(false);
-    }
+  // Now using direct OAuth endpoint instead of Firebase
+  const handleSignIn = () => {
+    // Redirect to the server's Google OAuth endpoint
+    window.location.href = "/api/auth/google";
   };
 
   return (
@@ -34,14 +26,9 @@ export function GoogleSignInButton({
       variant={variant}
       size={size}
       onClick={handleSignIn}
-      disabled={isLoading || localLoading}
       className={`${fullWidth ? 'w-full' : ''} flex items-center justify-center`}
     >
-      {isLoading || localLoading ? (
-        <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-      ) : (
-        <FaGoogle className="mr-2 h-4 w-4" />
-      )}
+      <FaGoogle className="mr-2 h-4 w-4" />
       {text}
     </Button>
   );
