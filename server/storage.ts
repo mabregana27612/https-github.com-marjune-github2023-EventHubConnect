@@ -24,6 +24,12 @@ export interface IStorage {
   getUserByUsername: (username: string) => Promise<User | undefined>;
   getUserByEmail: (email: string) => Promise<User | undefined>;
   updateUser: (id: number, userData: Partial<InsertUser>) => Promise<User>;
+  updateUserPassword: (id: number, newPassword: string) => Promise<boolean>;
+  
+  // Password reset methods
+  createPasswordResetToken: (userId: number) => Promise<string>;
+  getPasswordResetToken: (token: string) => Promise<any>;
+  markTokenAsUsed: (token: string) => Promise<boolean>;
   
   // Event methods
   createEvent: (eventData: any) => Promise<any>;
@@ -120,6 +126,73 @@ class DatabaseStorage implements IStorage {
     }
     
     return updatedUser;
+  }
+  
+  async updateUserPassword(id: number, newPassword: string): Promise<boolean> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ password: newPassword })
+      .where(eq(users.id, id))
+      .returning();
+    
+    return !!updatedUser;
+  }
+  
+  async createPasswordResetToken(userId: number): Promise<string> {
+    // Generate a secure random token
+    const token = randomBytes(32).toString('hex');
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 1); // Token expires in 1 hour
+    
+    // Delete any existing tokens for this user
+    await db
+      .delete(passwordResetTokens)
+      .where(eq(passwordResetTokens.userId, userId));
+    
+    // Create a new token
+    await db.insert(passwordResetTokens).values({
+      userId,
+      token,
+      expiresAt,
+      used: false
+    });
+    
+    return token;
+  }
+  
+  async getPasswordResetToken(token: string): Promise<any> {
+    const resetToken = await db.query.passwordResetTokens.findFirst({
+      where: eq(passwordResetTokens.token, token),
+      with: {
+        user: true
+      }
+    });
+    
+    if (!resetToken) {
+      throw new Error('Invalid or expired token');
+    }
+    
+    // Check if token is expired
+    if (new Date() > resetToken.expiresAt) {
+      throw new Error('Token has expired');
+    }
+    
+    // Check if token has been used
+    if (resetToken.used) {
+      throw new Error('Token has already been used');
+    }
+    
+    return resetToken;
+  }
+  
+  async markTokenAsUsed(token: string): Promise<boolean> {
+    const [updatedToken] = await db
+      .update(passwordResetTokens)
+      .set({ used: true })
+      .where(eq(passwordResetTokens.token, token))
+      .returning();
+    
+    return !!updatedToken;
   }
 
   // Event methods
