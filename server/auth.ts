@@ -1,6 +1,6 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { Strategy as GoogleStrategy } from "passport-google-oauth20";
+import { Strategy as GoogleStrategy, Profile, VerifyCallback } from "passport-google-oauth20";
 import { Express, Request } from "express";
 import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
@@ -76,15 +76,23 @@ export function setupAuth(app: Express) {
   
   // Setup Google Strategy
   const CALLBACK_URL = '/api/auth/google/callback';
+  console.log("Google callback URL:", CALLBACK_URL);
   
+  // Get the domain from the request (will be added in the middleware)
+  const getFullCallbackUrl = (req: Request) => {
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+    const host = req.headers['x-forwarded-host'] || req.get('host');
+    return `${protocol}://${host}${CALLBACK_URL}`;
+  };
+
   passport.use(
     new GoogleStrategy({
       clientID: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       callbackURL: CALLBACK_URL,
-      scope: ['profile', 'email']
+      passReqToCallback: true
     },
-    async (accessToken, refreshToken, profile, done) => {
+    async (req, accessToken, refreshToken, profile, done) => {
       try {
         console.log('Google profile:', profile);
         
@@ -202,14 +210,24 @@ export function setupAuth(app: Express) {
   });
   
   // Google OAuth routes
-  app.get("/api/auth/google", 
-    passport.authenticate("google", { scope: ["profile", "email"] })
-  );
+  app.get("/api/auth/google", (req, res, next) => {
+    // Log the full URL that Google will redirect back to
+    console.log(`Auth initiated, callback will be at: ${getFullCallbackUrl(req)}`);
+    
+    // Standard passport authenticate with Google strategy
+    passport.authenticate("google", { 
+      scope: ["profile", "email"]
+    })(req, res, next);
+  });
   
   app.get(CALLBACK_URL, 
-    passport.authenticate("google", { failureRedirect: "/auth" }),
+    // Standard passport callback handling
+    passport.authenticate("google", { 
+      failureRedirect: "/auth" 
+    }),
     (req, res) => {
       // Successful authentication, redirect to home page
+      console.log("Authentication successful, redirecting to home page");
       res.redirect("/");
     }
   );
