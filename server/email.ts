@@ -31,7 +31,7 @@ export async function sendEmail(params: EmailParams): Promise<{success: boolean,
     console.error('No SendGrid API key found. Email not sent.');
     return { success: false, error: 'SendGrid API key not configured' };
   }
-  
+
   if (!SENDGRID_API_KEY.startsWith('SG.')) {
     console.error('Invalid SendGrid API key format. Email not sent.');
     return { success: false, error: 'Invalid SendGrid API key format' };
@@ -51,10 +51,10 @@ export async function sendEmail(params: EmailParams): Promise<{success: boolean,
     return { success: true };
   } catch (error: any) {
     console.error('SendGrid email error:', error);
-    
+
     // Extract more detailed error information
     let errorMessage = 'Failed to send email';
-    
+
     if (error.response && error.response.body && error.response.body.errors) {
       const errors = error.response.body.errors;
       if (errors.length > 0) {
@@ -62,7 +62,7 @@ export async function sendEmail(params: EmailParams): Promise<{success: boolean,
         console.error('Detailed SendGrid error:', errors);
       }
     }
-    
+
     return { 
       success: false, 
       error: errorMessage
@@ -76,8 +76,10 @@ export function generatePasswordResetEmail(
   resetLink: string
 ): EmailParams {
   // Use a verified sender email for SendGrid
-  const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'noreply@eventpro.com';
-  
+  const fromEmail = process.env.SENDGRID_FROM_EMAIL;
+  if (!fromEmail) {
+    console.error('SENDGRID_FROM_EMAIL environment variable is not set');
+  }
   return {
     to,
     from: fromEmail,
