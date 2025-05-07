@@ -485,7 +485,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post(`${apiPrefix}/events/:id/register`, isAuthenticated, async (req, res) => {
     try {
       const eventId = parseInt(req.params.id);
-      const userId = req.user.id;
+      const userId = req.user!.id;
       
       const registration = await storage.registerForEvent(userId, eventId);
       res.status(201).json(registration);
@@ -497,7 +497,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete(`${apiPrefix}/events/:id/register`, isAuthenticated, async (req, res) => {
     try {
       const eventId = parseInt(req.params.id);
-      const userId = req.user.id;
+      const userId = req.user!.id;
       
       const success = await storage.cancelRegistration(userId, eventId);
       if (success) {
@@ -589,10 +589,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Certificates
   app.get(`${apiPrefix}/certificates`, isAuthenticated, async (req, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id;
       let certificates;
       
-      if (req.user.role === 'admin') {
+      if (req.user!.role === 'admin') {
         // Admin can see all certificates (implementation would depend on your storage interface)
         // For now, just return user's certificates
         certificates = await storage.getUserCertificates(userId);
@@ -623,7 +623,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if user is authorized (either owner or admin)
-      if (registration.userId !== req.user.id && req.user.role !== 'admin') {
+      if (registration.userId !== req.user!.id && req.user!.role !== 'admin') {
         return res.status(403).json({ error: "Unauthorized access to certificate" });
       }
       
@@ -664,7 +664,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post(`${apiPrefix}/events/:id/certificate`, isAuthenticated, async (req, res) => {
     try {
       const eventId = parseInt(req.params.id);
-      const userId = req.user.id;
+      const userId = req.user!.id;
       
       // Get registration for this user and event
       const registrations = await storage.getEventRegistrations(eventId);
@@ -707,7 +707,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Profile
   app.get(`${apiPrefix}/profile`, isAuthenticated, async (req, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id;
       const user = await storage.getUser(userId);
       
       // Get user's registrations
@@ -746,7 +746,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch(`${apiPrefix}/profile`, isAuthenticated, async (req, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id;
       const userData = req.body;
       
       // If updating password, verify current password
@@ -768,7 +768,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Signature upload endpoint
   app.patch(`${apiPrefix}/profile/signature`, isAuthenticated, async (req, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id;
       const { signatureImage } = req.body;
       
       if (!signatureImage) {
