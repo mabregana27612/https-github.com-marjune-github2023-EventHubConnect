@@ -16,14 +16,14 @@ const isAuthenticated = (req: Request, res: Response, next: Function) => {
 };
 
 const isAdmin = (req: Request, res: Response, next: Function) => {
-  if (req.isAuthenticated() && req.user.role === 'admin') {
+  if (req.isAuthenticated() && req.user && req.user.role === 'admin') {
     return next();
   }
   res.status(403).json({ message: "Forbidden" });
 };
 
 const isAdminOrSpeaker = (req: Request, res: Response, next: Function) => {
-  if (req.isAuthenticated() && (req.user.role === 'admin' || req.user.role === 'speaker')) {
+  if (req.isAuthenticated() && req.user && (req.user.role === 'admin' || req.user.role === 'speaker')) {
     return next();
   }
   res.status(403).json({ message: "Forbidden" });
@@ -397,7 +397,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const event = await storage.getEvent(eventId);
       
       // Add info about whether the current user is registered
-      if (req.isAuthenticated()) {
+      if (req.isAuthenticated() && req.user) {
         const userId = req.user.id;
         const registrations = await storage.getEventRegistrations(eventId);
         const userRegistration = registrations.find(reg => reg.userId === userId);
@@ -422,7 +422,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Parse and validate event data
       const eventData = {
         ...eventBase,
-        createdById: req.user.id,
+        createdById: req.user!.id,
       };
       
       // Create the event first
@@ -461,7 +461,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const eventId = parseInt(req.params.id);
       const eventData = {
         ...req.body,
-        userId: req.user.id,
+        userId: req.user!.id,
       };
       
       const event = await storage.updateEvent(eventId, eventData);
