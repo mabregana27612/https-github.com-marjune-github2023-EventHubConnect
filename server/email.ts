@@ -25,16 +25,16 @@ export interface EmailParams {
   html?: string;
 }
 
-export async function sendEmail(params: EmailParams): Promise<boolean> {
+export async function sendEmail(params: EmailParams): Promise<{success: boolean, error?: string}> {
   // Check if SendGrid API key is available and valid
   if (!SENDGRID_API_KEY) {
     console.error('No SendGrid API key found. Email not sent.');
-    return false;
+    return { success: false, error: 'SendGrid API key not configured' };
   }
   
   if (!SENDGRID_API_KEY.startsWith('SG.')) {
     console.error('Invalid SendGrid API key format. Email not sent.');
-    return false;
+    return { success: false, error: 'Invalid SendGrid API key format' };
   }
 
   try {
@@ -48,10 +48,25 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
 
     await mailService.send(msg as any);
     console.log(`Email sent to ${params.to}`);
-    return true;
-  } catch (error) {
+    return { success: true };
+  } catch (error: any) {
     console.error('SendGrid email error:', error);
-    return false;
+    
+    // Extract more detailed error information
+    let errorMessage = 'Failed to send email';
+    
+    if (error.response && error.response.body && error.response.body.errors) {
+      const errors = error.response.body.errors;
+      if (errors.length > 0) {
+        errorMessage = `SendGrid error: ${errors[0].message || 'Unknown error'}`;
+        console.error('Detailed SendGrid error:', errors);
+      }
+    }
+    
+    return { 
+      success: false, 
+      error: errorMessage
+    };
   }
 }
 

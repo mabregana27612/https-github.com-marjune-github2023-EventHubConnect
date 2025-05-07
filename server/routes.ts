@@ -70,13 +70,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Try to send email
       const emailResult = await sendEmail(generatePasswordResetEmail(user.email, user.name || user.username, resetLink));
       
-      if (!emailResult) {
-        console.log("Email sending failed, but we'll allow testing with the direct reset link");
-        // For testing purposes, we'll return the reset link directly in the response
-        // In production, this would be a security risk
+      if (!emailResult.success) {
+        console.log(`Email sending failed: ${emailResult.error}. Providing direct reset link for testing.`);
+        // For testing purposes, return the reset link directly in the response
         return res.status(200).json({ 
           message: "Password reset email would be sent. Since email sending is not configured correctly, you can use this link instead:", 
-          resetLink: `/reset-password?token=${token}` 
+          resetLink: `/reset-password?token=${token}`,
+          emailError: emailResult.error
         });
       }
       

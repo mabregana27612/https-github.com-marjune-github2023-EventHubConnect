@@ -430,6 +430,13 @@ export default function AuthPage() {
                             >
                               Go to Reset Password Page
                             </Button>
+                            
+                            {forgotPasswordMutation.data?.emailError && (
+                              <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded text-amber-800 text-xs">
+                                <p className="font-semibold">Note about email sending:</p>
+                                <p>{forgotPasswordMutation.data.emailError}</p>
+                              </div>
+                            )}
                           </div>
                         ) : (
                           "If your email address is associated with an account, you will receive password reset instructions."
