@@ -49,6 +49,7 @@ export default function AuthPage() {
   const [_, setLocation] = useLocation();
   const { toast } = useToast();
   const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState(false);
+  const [tempResetLink, setTempResetLink] = useState<string | null>(null);
   
   // Get URL parameters for reset token
   const searchParams = new URLSearchParams(window.location.search);
