@@ -2,10 +2,15 @@ import { MailService } from '@sendgrid/mail';
 
 // Check if the SendGrid API key is available and valid
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY || '';
+console.log("SendGrid API key available:", SENDGRID_API_KEY ? "Yes" : "No");
+console.log("SendGrid API key format valid:", SENDGRID_API_KEY && SENDGRID_API_KEY.startsWith('SG.') ? "Yes" : "No");
+
 if (!SENDGRID_API_KEY) {
   console.error("SENDGRID_API_KEY environment variable is not set");
 } else if (!SENDGRID_API_KEY.startsWith('SG.')) {
   console.error("API key does not start with \"SG.\"");
+} else {
+  console.log("SendGrid API key validation passed");
 }
 
 // Init with the available API key - we'll handle errors if it's not valid
@@ -55,7 +60,8 @@ export function generatePasswordResetEmail(
   name: string,
   resetLink: string
 ): EmailParams {
-  const fromEmail = 'noreply@eventpro.com'; // Replace with your actual sender email
+  // Use a verified sender email for SendGrid
+  const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'noreply@eventpro.com';
   
   return {
     to,
